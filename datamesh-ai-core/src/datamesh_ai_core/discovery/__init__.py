@@ -6,6 +6,7 @@ This module provides automatic discovery capabilities to scan and identify:
 - Available connectors and their configurations
 - Data sources (databases, data lakes, warehouses)
 - Schemas, tables, and metadata
+- Cloud-specific features (crawlers, scans, assets)
 """
 
 from .catalogs import (
@@ -26,6 +27,35 @@ from .sources import (
 )
 from .unified import UnifiedDiscovery, DiscoveryReport
 
+# Cloud-specific enhanced discovery
+from .aws_enhancements import (
+    AWSEnhancedDiscovery,
+    AWSDiscoveryEnhancements,
+    DiscoveredS3Bucket,
+    DiscoveredGlueCrawler,
+    CrawlerSuggestion,
+    print_aws_enhancements,
+)
+from .azure_enhancements import (
+    AzureEnhancedDiscovery,
+    AzureDiscoveryEnhancements,
+    DiscoveredStorageAccount,
+    DiscoveredPurviewAsset,
+    DiscoveredDataFactory,
+    DiscoveredSynapseWorkspace,
+    PurviewScanSuggestion,
+    print_azure_enhancements,
+)
+from .gcp_enhancements import (
+    GCPEnhancedDiscovery,
+    GCPDiscoveryEnhancements,
+    DiscoveredGCSBucket,
+    DiscoveredBigQueryDataset,
+    DiscoveredDataplexLake,
+    DataplexAssetSuggestion,
+    print_gcp_enhancements,
+)
+
 __all__ = [
     # Catalog discovery
     "CatalogDiscovery",
@@ -43,4 +73,28 @@ __all__ = [
     # Unified
     "UnifiedDiscovery",
     "DiscoveryReport",
+    # AWS Enhanced
+    "AWSEnhancedDiscovery",
+    "AWSDiscoveryEnhancements",
+    "DiscoveredS3Bucket",
+    "DiscoveredGlueCrawler",
+    "CrawlerSuggestion",
+    "print_aws_enhancements",
+    # Azure Enhanced
+    "AzureEnhancedDiscovery",
+    "AzureDiscoveryEnhancements",
+    "DiscoveredStorageAccount",
+    "DiscoveredPurviewAsset",
+    "DiscoveredDataFactory",
+    "DiscoveredSynapseWorkspace",
+    "PurviewScanSuggestion",
+    "print_azure_enhancements",
+    # GCP Enhanced
+    "GCPEnhancedDiscovery",
+    "GCPDiscoveryEnhancements",
+    "DiscoveredGCSBucket",
+    "DiscoveredBigQueryDataset",
+    "DiscoveredDataplexLake",
+    "DataplexAssetSuggestion",
+    "print_gcp_enhancements",
 ]
