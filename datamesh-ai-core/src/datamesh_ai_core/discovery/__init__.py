@@ -56,6 +56,43 @@ from .gcp_enhancements import (
     print_gcp_enhancements,
 )
 
+# CLI and execution
+from .cli import (
+    DiscoveryCLI,
+    ExecutionResult,
+    ExecutionStatus,
+    ExecutionPlan,
+    print_execution_results,
+)
+
+# Partitioning
+from .partitioning import (
+    PartitionDetector,
+    PartitionAnalyzer,
+    PartitionAnalysis,
+    PartitionRecommendation,
+    DetectedPartition,
+    PartitionType,
+    PartitionGranularity,
+    print_partition_analysis,
+)
+
+# Snowflake
+from .snowflake_discovery import (
+    SnowflakeDiscovery,
+    SnowflakeDiscoveryResult,
+    DiscoveredSnowflakeAccount,
+    DiscoveredWarehouse,
+    DiscoveredDatabase,
+    DiscoveredSnowflakeSchema,
+    DiscoveredSnowflakeTable,
+    DiscoveredStage,
+    DiscoveredStorageIntegration,
+    DiscoveredShare,
+    ClusteringSuggestion,
+    print_snowflake_discovery,
+)
+
 __all__ = [
     # Catalog discovery
     "CatalogDiscovery",
@@ -97,4 +134,32 @@ __all__ = [
     "DiscoveredDataplexLake",
     "DataplexAssetSuggestion",
     "print_gcp_enhancements",
+    # CLI
+    "DiscoveryCLI",
+    "ExecutionResult",
+    "ExecutionStatus",
+    "ExecutionPlan",
+    "print_execution_results",
+    # Partitioning
+    "PartitionDetector",
+    "PartitionAnalyzer",
+    "PartitionAnalysis",
+    "PartitionRecommendation",
+    "DetectedPartition",
+    "PartitionType",
+    "PartitionGranularity",
+    "print_partition_analysis",
+    # Snowflake
+    "SnowflakeDiscovery",
+    "SnowflakeDiscoveryResult",
+    "DiscoveredSnowflakeAccount",
+    "DiscoveredWarehouse",
+    "DiscoveredDatabase",
+    "DiscoveredSnowflakeSchema",
+    "DiscoveredSnowflakeTable",
+    "DiscoveredStage",
+    "DiscoveredStorageIntegration",
+    "DiscoveredShare",
+    "ClusteringSuggestion",
+    "print_snowflake_discovery",
 ]
