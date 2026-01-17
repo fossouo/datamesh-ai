@@ -1,0 +1,122 @@
+apiVersion: datamesh.ai/v1
+kind: Agent
+
+metadata:
+  name: sql-agent
+  displayName: SQL Agent
+  description: >
+    Generates, validates and optimizes SQL queries against governed datasets.
+    Supports natural language to SQL conversion with governance awareness.
+  version: 1.0.0
+  owner:
+    team: data-platform
+    email: data-platform@datamesh.ai
+  labels:
+    domain: data-platform
+    maturity: beta
+
+spec:
+  runtime:
+    entrypoint: "sql_agent.handler:handle"
+    timeoutMs: 30000
+    concurrency:
+      maxParallel: 10
+    retries:
+      maxAttempts: 2
+      backoffMs: 500
+
+  capabilities:
+    - id: sql.generate
+      description: Generate SQL from a natural language request.
+      inputSchemaRef: "schemas/sql.generate.input.json"
+      outputSchemaRef: "schemas/sql.generate.output.json"
+    - id: sql.explain
+      description: Explain a SQL query and its expected execution plan.
+      inputSchemaRef: "schemas/sql.explain.input.json"
+      outputSchemaRef: "schemas/sql.explain.output.json"
+    - id: sql.optimize
+      description: Suggest safe optimizations for a SQL query.
+      inputSchemaRef: "schemas/sql.optimize.input.json"
+      outputSchemaRef: "schemas/sql.optimize.output.json"
+
+  tools:
+    - name: trino
+      kind: Connector
+      ref: "connectors/trino"
+      allow:
+        - "query"
+        - "explain"
+      deny:
+        - "write"
+        - "ddl"
+
+  dataAccess:
+    defaultPolicy: "deny"
+    allowedDatasets:
+      - uri: "catalog://finance.customer_transactions"
+        permissions:
+          - "read"
+        constraints:
+          rowFilters:
+            - "country IN (${user.allowed_countries})"
+          columnMasking:
+            - column: "card_number"
+              method: "mask_last4"
+      - uri: "catalog://finance.revenue"
+        permissions:
+          - "read"
+      - uri: "catalog://sales.orders"
+        permissions:
+          - "read"
+
+  governance:
+    classificationAwareness:
+      enabled: true
+      blockedClassifications:
+        - "PII"
+        - "SECRET"
+    approvalRequiredFor:
+      - "sql.generate"
+    policyRefs:
+      - "policies/rgpd.yaml"
+      - "policies/data-retention.yaml"
+
+  a2a:
+    canCall:
+      - agentRef: "catalog-agent"
+        forCapabilities: ["catalog.resolve", "catalog.lineage"]
+      - agentRef: "governance-agent"
+        forCapabilities: ["governance.authorize", "governance.redact"]
+    callConstraints:
+      maxDepth: 3
+      requireTraceParent: true
+      allowedOnBehalfOf: true
+
+  observability:
+    tracing:
+      enabled: true
+      standard: "opentelemetry"
+    audit:
+      enabled: true
+      logInputs: true
+      logOutputs: true
+      redactFields:
+        - "user.token"
+        - "secrets.*"
+
+  safety:
+    mode: "governed"
+    requireHumanConfirmationFor:
+      - "sql.optimize"
+    invariants:
+      - "NO_WRITE_OPERATIONS"
+      - "NO_SCHEMA_CHANGES"
+
+  interfaceHints:
+    preferredInputs:
+      - name: question
+        type: string
+        example: "Show me monthly revenue for 2025 by region"
+    outputFormats:
+      - "json"
+      - "markdown"

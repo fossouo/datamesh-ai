@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datamesh.ai/schemas/sql.optimize.input.json",
+  "title": "SQL Optimize Input",
+  "description": "Input schema for SQL query optimization",
+  "type": "object",
+  "required": ["sql"],
+  "properties": {
+    "sql": {
+      "type": "string",
+      "description": "The SQL query to optimize",
+      "minLength": 1,
+      "examples": [
+        "SELECT * FROM orders WHERE customer_id IN (SELECT customer_id FROM customers WHERE country = 'USA')"
+      ]
+    },
+    "options": {
+      "type": "object",
+      "description": "Options for the optimization process",
+      "properties": {
+        "dialect": {
+          "type": "string",
+          "description": "SQL dialect of the query",
+          "enum": ["ansi", "postgresql", "mysql", "bigquery", "snowflake", "athena", "presto", "spark"],
+          "default": "ansi",
+          "examples": ["postgresql", "bigquery"]
+        },
+        "optimization_goals": {
+          "type": "array",
+          "description": "Goals to optimize for (in priority order)",
+          "items": {
+            "type": "string",
+            "enum": ["performance", "cost", "readability", "memory", "parallelism"]
+          },
+          "default": ["performance"],
+          "examples": [["performance", "cost"], ["readability"]]
+        },
+        "preserve_semantics": {
+          "type": "boolean",
+          "description": "Whether to strictly preserve query semantics (no approximations)",
+          "default": true,
+          "examples": [true, false]
+        },
+        "max_rewrite_depth": {
+          "type": "integer",
+          "description": "Maximum depth of query rewrite transformations",
+          "minimum": 1,
+          "maximum": 10,
+          "default": 3,
+          "examples": [3, 5]
+        },
+        "enabled_optimizations": {
+          "type": "array",
+          "description": "Specific optimizations to apply (if empty, all are enabled)",
+          "items": {
+            "type": "string",
+            "enum": [
+              "subquery_to_join",
+              "predicate_pushdown",
+              "join_reordering",
+              "index_hints",
+              "partition_pruning",
+              "column_pruning",
+              "constant_folding",
+              "distinct_elimination",
+              "union_merge",
+              "cte_materialization"
+            ]
+          },
+          "examples": [["subquery_to_join", "predicate_pushdown"]]
+        },
+        "disabled_optimizations": {
+          "type": "array",
+          "description": "Specific optimizations to disable",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["join_reordering"]]
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "description": "Context information to guide optimization",
+      "properties": {
+        "table_statistics": {
+          "type": "object",
+          "description": "Statistics about tables for better optimization decisions",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "row_count": {
+                "type": "integer",
+                "description": "Number of rows in the table",
+                "examples": [1000000]
+              },
+              "size_bytes": {
+                "type": "integer",
+                "description": "Size of the table in bytes",
+                "examples": [1073741824]
+              },
+              "partition_column": {
+                "type": "string",
+                "description": "Column used for partitioning",
+                "examples": ["order_date"]
+              },
+              "clustered_columns": {
+                "type": "array",
+                "description": "Columns used for clustering",
+                "items": {
+                  "type": "string"
+                },
+                "examples": [["customer_id"]]
+              },
+              "indexes": {
+                "type": "array",
+                "description": "Available indexes on the table",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "examples": ["idx_orders_customer_id"]
+                    },
+                    "columns": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "examples": [["customer_id", "order_date"]]
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": ["btree", "hash", "gin", "gist", "brin"],
+                      "examples": ["btree"]
+                    }
+                  }
+                }
+              },
+              "column_stats": {
+                "type": "object",
+                "description": "Statistics for individual columns",
+                "additionalProperties": {
+                  "type": "object",
+                  "properties": {
+                    "distinct_count": {
+                      "type": "integer",
+                      "examples": [50000]
+                    },
+                    "null_fraction": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "examples": [0.01]
+                    },
+                    "avg_width": {
+                      "type": "integer",
+                      "examples": [8]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "execution_environment": {
+          "type": "object",
+          "description": "Information about the execution environment",
+          "properties": {
+            "available_memory_mb": {
+              "type": "integer",
+              "description": "Available memory for query execution in MB",
+              "examples": [4096, 16384]
+            },
+            "max_parallelism": {
+              "type": "integer",
+              "description": "Maximum degree of parallelism available",
+              "examples": [8, 32]
+            },
+            "distributed": {
+              "type": "boolean",
+              "description": "Whether the query runs in a distributed environment",
+              "examples": [true, false]
+            }
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "sql": "SELECT * FROM orders WHERE customer_id IN (SELECT customer_id FROM customers WHERE country = 'USA')",
+      "options": {
+        "dialect": "postgresql",
+        "optimization_goals": ["performance", "readability"],
+        "preserve_semantics": true,
+        "enabled_optimizations": ["subquery_to_join", "predicate_pushdown"]
+      },
+      "context": {
+        "table_statistics": {
+          "orders": {
+            "row_count": 10000000,
+            "size_bytes": 1073741824,
+            "indexes": [
+              {
+                "name": "idx_orders_customer_id",
+                "columns": ["customer_id"],
+                "type": "btree"
+              }
+            ]
+          },
+          "customers": {
+            "row_count": 100000,
+            "size_bytes": 10485760,
+            "column_stats": {
+              "country": {
+                "distinct_count": 50,
+                "null_fraction": 0.0
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

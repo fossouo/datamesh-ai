@@ -1,0 +1,8 @@
+{
+  "question": "Show monthly revenue per region for 2025",
+  "user": {
+    "id": "user-42",
+    "roles": ["analyst"]
+  },
+  "policyRefs": ["policies/rgpd.yaml"]
+}

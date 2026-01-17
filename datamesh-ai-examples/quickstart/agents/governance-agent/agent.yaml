@@ -1,0 +1,153 @@
+# Governance Agent Configuration
+# ================================
+# This agent handles authorization, policy enforcement, and compliance checks
+
+agent:
+  name: governance-agent
+  version: "1.0.0"
+  description: "Enforces data governance policies, authorization, and compliance requirements"
+
+  # Agent identification
+  id: governance-agent-001
+  type: policy-enforcer
+
+# Server configuration
+server:
+  host: 0.0.0.0
+  port: 8083
+  tls:
+    enabled: true
+    cert: ../../certs/governance-agent.crt
+    key: ../../certs/governance-agent.key
+    ca: ../../certs/ca.crt
+
+# Capabilities this agent provides
+capabilities:
+  - name: governance.authorize
+    description: "Check if a user is authorized to perform an action on resources"
+    inputSchema:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+            roles:
+              type: array
+              items:
+                type: string
+          required:
+            - id
+        resource:
+          type: array
+          items:
+            type: string
+          description: "List of tables/columns to access"
+        action:
+          type: string
+          enum: ["SELECT", "INSERT", "UPDATE", "DELETE", "ADMIN"]
+        policyRefs:
+          type: array
+          items:
+            type: string
+          description: "Policy files to apply"
+      required:
+        - user
+        - resource
+        - action
+    outputSchema:
+      type: object
+      properties:
+        authorized:
+          type: boolean
+        restrictions:
+          type: object
+          description: "Column/row level restrictions if partially authorized"
+        policiesApplied:
+          type: array
+          items:
+            type: string
+        denialReason:
+          type: string
+          description: "Present if authorized is false"
+
+  - name: governance.audit
+    description: "Log an access event for audit trail"
+    inputSchema:
+      type: object
+      properties:
+        user:
+          type: object
+        resource:
+          type: array
+          items:
+            type: string
+        action:
+          type: string
+        result:
+          type: string
+          enum: ["ALLOWED", "DENIED", "PARTIAL"]
+        timestamp:
+          type: string
+      required:
+        - user
+        - resource
+        - action
+        - result
+    outputSchema:
+      type: object
+      properties:
+        auditId:
+          type: string
+        logged:
+          type: boolean
+
+  - name: governance.classify
+    description: "Classify data sensitivity level"
+    inputSchema:
+      type: object
+      properties:
+        tables:
+          type: array
+          items:
+            type: string
+        columns:
+          type: array
+          items:
+            type: string
+    outputSchema:
+      type: object
+      properties:
+        classifications:
+          type: object
+          description: "Map of resource to classification level"
+
+# Policy configuration
+policies:
+  directory: ../../policies
+  files:
+    - rgpd.yaml
+    - data-retention.yaml
+
+# Observability configuration
+observability:
+  tracing:
+    enabled: true
+    exporter: otlp
+    endpoint: http://localhost:4317
+  metrics:
+    enabled: true
+    endpoint: http://localhost:4317
+  logging:
+    level: INFO
+    format: json
+    output: ../../logs/governance-agent.log
+
+# Audit configuration
+audit:
+  enabled: true
+  storage: ../../logs/audit
+  retention:
+    days: 365
+    compress: true

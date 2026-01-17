@@ -1,0 +1,41 @@
+# DATAMESH.AI Quickstart - Python Dependencies
+# =============================================
+
+# YAML parsing
+PyYAML>=6.0.1
+
+# Async HTTP client
+aiohttp>=3.9.0
+httpx>=0.25.0
+
+# OpenTelemetry
+opentelemetry-api>=1.21.0
+opentelemetry-sdk>=1.21.0
+opentelemetry-exporter-otlp>=1.21.0
+opentelemetry-instrumentation>=0.42b0
+
+# Database drivers (for catalog agent)
+asyncpg>=0.29.0
+psycopg2-binary>=2.9.9
+
+# Kafka client (for async mode)
+aiokafka>=0.9.0
+
+# JSON Schema validation
+jsonschema>=4.20.0
+
+# Cryptography (for mTLS)
+cryptography>=41.0.0
+
+# Pydantic for data validation
+pydantic>=2.5.0
+
+# CLI utilities
+click>=8.1.0
+rich>=13.7.0
+
+# Development tools (optional)
+pytest>=7.4.0
+pytest-asyncio>=0.23.0
+black>=23.12.0
+mypy>=1.7.0

@@ -1,0 +1,221 @@
+# DATAMESH.AI Orchestrator Configuration
+# =======================================
+# This file configures the A2A orchestrator including registered agents,
+# global policies, tracing endpoints, and timeout defaults.
+
+apiVersion: datamesh.ai/orchestrator/v1
+kind: OrchestratorConfig
+
+metadata:
+  name: datamesh-orchestrator
+  version: 1.0.0
+  environment: development
+
+# Registered agents with their endpoints and capabilities
+agents:
+  - name: sql-agent
+    displayName: SQL Agent
+    endpoint: http://localhost:8001
+    healthEndpoint: /health
+    capabilities:
+      - sql.generate
+      - sql.explain
+      - sql.optimize
+    canCall:
+      - catalog-agent
+      - governance-agent
+    contractRef: agents/sql-agent/agent.yaml
+    enabled: true
+
+  - name: catalog-agent
+    displayName: Catalog Agent
+    endpoint: http://localhost:8002
+    healthEndpoint: /health
+    capabilities:
+      - catalog.resolve
+      - catalog.lineage
+      - catalog.search
+    canCall:
+      - governance-agent
+    contractRef: agents/catalog-agent/agent.yaml
+    enabled: true
+
+  - name: governance-agent
+    displayName: Governance Agent
+    endpoint: http://localhost:8003
+    healthEndpoint: /health
+    capabilities:
+      - governance.authorize
+      - governance.redact
+      - governance.classify
+    canCall: []
+    contractRef: agents/governance-agent/agent.yaml
+    enabled: true
+
+  - name: spark-agent
+    displayName: Spark Agent
+    endpoint: http://localhost:8004
+    healthEndpoint: /health
+    capabilities:
+      - spark.plan
+      - spark.execute
+      - spark.monitor
+    canCall:
+      - catalog-agent
+      - governance-agent
+    contractRef: agents/spark-agent/agent.yaml
+    enabled: true
+
+# Global policy references applied to all A2A calls
+policies:
+  globalPolicies:
+    - ref: policies/security/authentication.yaml
+      required: true
+    - ref: policies/security/authorization.yaml
+      required: true
+    - ref: policies/governance/audit-logging.yaml
+      required: true
+    - ref: policies/governance/data-retention.yaml
+      required: false
+
+  # Classification-based policies
+  classificationPolicies:
+    PII:
+      - ref: policies/rgpd.yaml
+        required: true
+      - ref: policies/pii-masking.yaml
+        required: true
+    SECRET:
+      - ref: policies/secret-handling.yaml
+        required: true
+    CONFIDENTIAL:
+      - ref: policies/confidential-data.yaml
+        required: true
+
+# OpenTelemetry tracing configuration
+tracing:
+  enabled: true
+  collectorEndpoint: http://localhost:4317
+  protocol: grpc  # grpc or http
+  serviceName: datamesh-orchestrator
+  samplingRate: 1.0  # 1.0 = sample all, 0.1 = sample 10%
+  propagators:
+    - w3c-trace-context
+    - baggage
+  exportBatchSize: 512
+  exportInterval: 5000  # milliseconds
+
+# Timeout and deadline configuration (in milliseconds)
+timeouts:
+  # Default timeout for A2A requests if not specified by caller
+  defaultDeadlineMs: 30000
+
+  # Maximum allowed deadline (prevents infinite or excessive waits)
+  maxDeadlineMs: 300000  # 5 minutes
+
+  # Minimum deadline (prevents unrealistic short timeouts)
+  minDeadlineMs: 1000  # 1 second
+
+  # Health check timeout
+  healthCheckTimeoutMs: 5000
+
+  # Connection timeout to agents
+  connectionTimeoutMs: 10000
+
+  # Read timeout for agent responses
+  readTimeoutMs: 60000
+
+# A2A routing constraints
+routing:
+  # Maximum call depth to prevent infinite delegation loops
+  maxDepth: 5
+
+  # Require trace context propagation
+  requireTraceParent: true
+
+  # Allow delegation (onBehalfOf)
+  allowDelegation: true
+
+  # Circuit breaker configuration
+  circuitBreaker:
+    enabled: true
+    failureThreshold: 5  # Number of failures before opening circuit
+    successThreshold: 2  # Number of successes to close circuit
+    timeoutMs: 60000     # Time before attempting to close circuit
+
+  # Retry configuration
+  retry:
+    enabled: true
+    maxAttempts: 3
+    backoffMs: 500
+    backoffMultiplier: 2.0
+    maxBackoffMs: 5000
+    retryableErrors:
+      - TIMEOUT
+      - SERVICE_UNAVAILABLE
+      - CONNECTION_ERROR
+
+# Server configuration
+server:
+  host: 0.0.0.0
+  port: 8000
+  workers: 4
+  debug: false
+
+  # CORS configuration
+  cors:
+    enabled: true
+    allowOrigins:
+      - "*"
+    allowMethods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+    allowHeaders:
+      - "*"
+
+  # Rate limiting
+  rateLimit:
+    enabled: true
+    requestsPerMinute: 1000
+    burstSize: 100
+
+# Logging configuration
+logging:
+  level: INFO
+  format: json
+  includeTraceId: true
+  redactFields:
+    - user.token
+    - secrets.*
+    - credentials.*
+    - password
+    - apiKey
+
+# Audit configuration
+audit:
+  enabled: true
+  logInputs: true
+  logOutputs: true
+  storageBackend: filesystem  # filesystem, s3, database
+  storagePath: ./audits
+  retentionDays: 90
+
+# Supervision configuration
+supervision:
+  # Health check interval for agents
+  healthCheckIntervalMs: 30000
+
+  # Consider agent unhealthy after this many consecutive failures
+  unhealthyThreshold: 3
+
+  # Consider agent healthy after this many consecutive successes
+  healthyThreshold: 2
+
+  # Automatically restart unhealthy agents (if supported)
+  autoRestart: false
+
+  # Alert on agent health changes
+  alertOnHealthChange: true
+  alertWebhook: null  # Optional webhook URL for alerts

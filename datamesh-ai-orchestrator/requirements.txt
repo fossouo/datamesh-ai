@@ -1,0 +1,28 @@
+# DATAMESH.AI Orchestrator Dependencies
+# ======================================
+
+# Web framework
+fastapi>=0.109.0,<1.0.0
+uvicorn[standard]>=0.27.0,<1.0.0
+pydantic>=2.5.0,<3.0.0
+
+# HTTP client for agent communication
+httpx>=0.26.0,<1.0.0
+
+# Configuration
+pyyaml>=6.0.1,<7.0.0
+
+# OpenTelemetry for tracing (optional but recommended)
+opentelemetry-api>=1.22.0,<2.0.0
+opentelemetry-sdk>=1.22.0,<2.0.0
+opentelemetry-exporter-otlp>=1.22.0,<2.0.0
+opentelemetry-instrumentation-fastapi>=0.43b0,<1.0.0
+opentelemetry-instrumentation-httpx>=0.43b0,<1.0.0
+
+# Development dependencies (optional)
+# pytest>=8.0.0,<9.0.0
+# pytest-asyncio>=0.23.0,<1.0.0
+# pytest-cov>=4.1.0,<5.0.0
+# black>=24.1.0,<25.0.0
+# ruff>=0.1.0,<1.0.0
+# mypy>=1.8.0,<2.0.0

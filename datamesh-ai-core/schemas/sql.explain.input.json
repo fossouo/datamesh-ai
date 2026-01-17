@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datamesh.ai/schemas/sql.explain.input.json",
+  "title": "SQL Explain Input",
+  "description": "Input schema for explaining a SQL query's execution plan and cost",
+  "type": "object",
+  "required": ["sql"],
+  "properties": {
+    "sql": {
+      "type": "string",
+      "description": "The SQL query to explain",
+      "minLength": 1,
+      "examples": [
+        "SELECT c.customer_id, c.name, SUM(o.amount) as total_revenue FROM customers c JOIN orders o ON c.customer_id = o.customer_id GROUP BY c.customer_id, c.name ORDER BY total_revenue DESC LIMIT 10"
+      ]
+    },
+    "options": {
+      "type": "object",
+      "description": "Options for the explain operation",
+      "properties": {
+        "dialect": {
+          "type": "string",
+          "description": "SQL dialect of the query",
+          "enum": ["ansi", "postgresql", "mysql", "bigquery", "snowflake", "athena", "presto", "spark"],
+          "default": "ansi",
+          "examples": ["postgresql", "bigquery"]
+        },
+        "format": {
+          "type": "string",
+          "description": "Output format for the execution plan",
+          "enum": ["text", "json", "yaml", "tree"],
+          "default": "json",
+          "examples": ["json", "text"]
+        },
+        "analyze": {
+          "type": "boolean",
+          "description": "Whether to actually execute the query to get real statistics (vs estimated)",
+          "default": false,
+          "examples": [false, true]
+        },
+        "verbose": {
+          "type": "boolean",
+          "description": "Whether to include detailed information in the explanation",
+          "default": false,
+          "examples": [true]
+        },
+        "costs": {
+          "type": "boolean",
+          "description": "Whether to include cost estimates",
+          "default": true,
+          "examples": [true]
+        },
+        "buffers": {
+          "type": "boolean",
+          "description": "Whether to include buffer usage information (PostgreSQL specific)",
+          "default": false,
+          "examples": [true]
+        }
+      }
+    },
+    "context": {
+      "type": "object",
+      "description": "Additional context for the explain operation",
+      "properties": {
+        "tableStats": {
+          "type": "object",
+          "description": "Known statistics about tables for better estimates",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "rowCount": {
+                "type": "integer",
+                "description": "Estimated or known row count",
+                "examples": [1000000]
+              },
+              "sizeBytes": {
+                "type": "integer",
+                "description": "Estimated table size in bytes",
+                "examples": [104857600]
+              },
+              "partitions": {
+                "type": "integer",
+                "description": "Number of partitions",
+                "examples": [365]
+              }
+            }
+          },
+          "examples": [
+            {
+              "orders": {
+                "rowCount": 10000000,
+                "sizeBytes": 1073741824,
+                "partitions": 365
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "sql": "SELECT c.customer_id, c.name, SUM(o.amount) as total_revenue FROM customers c JOIN orders o ON c.customer_id = o.customer_id WHERE o.order_date >= '2024-01-01' GROUP BY c.customer_id, c.name ORDER BY total_revenue DESC LIMIT 10",
+      "options": {
+        "dialect": "postgresql",
+        "format": "json",
+        "analyze": false,
+        "verbose": true,
+        "costs": true
+      },
+      "context": {
+        "tableStats": {
+          "customers": {
+            "rowCount": 50000,
+            "sizeBytes": 5242880
+          },
+          "orders": {
+            "rowCount": 10000000,
+            "sizeBytes": 1073741824,
+            "partitions": 365
+          }
+        }
+      }
+    }
+  ]
+}

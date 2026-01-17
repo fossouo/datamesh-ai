@@ -1,0 +1,11 @@
+{
+  "question": "Show me session counts and costs by language for Talki",
+  "user": {
+    "id": "analyst-01",
+    "roles": ["analyst", "data-team"]
+  },
+  "context": {
+    "database": "talki_metrics_dev",
+    "purpose": "analytics_review"
+  }
+}

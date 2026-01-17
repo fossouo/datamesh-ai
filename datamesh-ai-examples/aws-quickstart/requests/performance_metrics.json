@@ -1,0 +1,11 @@
+{
+  "question": "Show latency and performance metrics by language",
+  "user": {
+    "id": "analyst-01",
+    "roles": ["analyst", "engineering"]
+  },
+  "context": {
+    "database": "talki_metrics_dev",
+    "purpose": "performance_review"
+  }
+}

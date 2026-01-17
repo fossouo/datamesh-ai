@@ -1,0 +1,408 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datamesh.ai/schemas/catalog.resolve.output.json",
+  "title": "Catalog Resolve Output",
+  "description": "Output schema for resolved dataset metadata from the data catalog",
+  "type": "object",
+  "required": ["dataset_uri", "fields"],
+  "properties": {
+    "dataset_uri": {
+      "type": "string",
+      "format": "uri",
+      "description": "The URI of the resolved dataset",
+      "examples": ["datamesh://sales/core/customers"]
+    },
+    "dataset_metadata": {
+      "type": "object",
+      "description": "Metadata about the dataset",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Human-readable name of the dataset",
+          "examples": ["Customer Master Data"]
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the dataset",
+          "examples": ["Core customer records including contact information and demographics"]
+        },
+        "domain": {
+          "type": "string",
+          "description": "Data domain this dataset belongs to",
+          "examples": ["sales", "finance", "marketing"]
+        },
+        "product": {
+          "type": "string",
+          "description": "Data product this dataset is part of",
+          "examples": ["core", "reporting", "analytics"]
+        },
+        "owner": {
+          "type": "object",
+          "description": "Owner information",
+          "properties": {
+            "team": {
+              "type": "string",
+              "examples": ["sales-data-team"]
+            },
+            "email": {
+              "type": "string",
+              "format": "email",
+              "examples": ["sales-data@company.com"]
+            }
+          }
+        },
+        "version": {
+          "type": "string",
+          "description": "Current schema version",
+          "examples": ["v1.2.0"]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the dataset was created",
+          "examples": ["2023-01-15T10:30:00Z"]
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the dataset was last updated",
+          "examples": ["2024-12-01T14:22:00Z"]
+        },
+        "tags": {
+          "type": "array",
+          "description": "Tags associated with the dataset",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["customer", "pii", "master-data"]]
+        }
+      }
+    },
+    "fields": {
+      "type": "array",
+      "description": "List of fields in the dataset with their metadata",
+      "items": {
+        "type": "object",
+        "required": ["name", "type", "nullable"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the field",
+            "examples": ["customer_id", "email", "created_at"]
+          },
+          "type": {
+            "type": "string",
+            "description": "Data type of the field",
+            "examples": ["string", "integer", "timestamp", "decimal(10,2)", "boolean", "array<string>", "struct<name:string,value:integer>"]
+          },
+          "nullable": {
+            "type": "boolean",
+            "description": "Whether the field can contain null values",
+            "examples": [true, false]
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the field",
+            "examples": ["Unique identifier for the customer", "Customer's primary email address"]
+          },
+          "is_primary_key": {
+            "type": "boolean",
+            "description": "Whether this field is part of the primary key",
+            "default": false,
+            "examples": [true, false]
+          },
+          "is_partition_key": {
+            "type": "boolean",
+            "description": "Whether this field is used for partitioning",
+            "default": false,
+            "examples": [true, false]
+          },
+          "default_value": {
+            "description": "Default value for the field if any",
+            "examples": ["UNKNOWN", 0, false, null]
+          },
+          "constraints": {
+            "type": "object",
+            "description": "Constraints on the field",
+            "properties": {
+              "min_value": {
+                "description": "Minimum allowed value",
+                "examples": [0, "2020-01-01"]
+              },
+              "max_value": {
+                "description": "Maximum allowed value",
+                "examples": [999999999, "2099-12-31"]
+              },
+              "pattern": {
+                "type": "string",
+                "description": "Regex pattern for validation",
+                "examples": ["^[A-Z]{2}[0-9]{6}$"]
+              },
+              "allowed_values": {
+                "type": "array",
+                "description": "List of allowed values (enum)",
+                "examples": [["active", "inactive", "pending"]]
+              },
+              "foreign_key": {
+                "type": "object",
+                "description": "Foreign key reference",
+                "properties": {
+                  "dataset_uri": {
+                    "type": "string",
+                    "examples": ["datamesh://sales/core/orders"]
+                  },
+                  "field": {
+                    "type": "string",
+                    "examples": ["customer_id"]
+                  }
+                }
+              }
+            }
+          },
+          "statistics": {
+            "type": "object",
+            "description": "Statistics about the field values",
+            "properties": {
+              "distinct_count": {
+                "type": "integer",
+                "description": "Number of distinct values",
+                "examples": [50000]
+              },
+              "null_count": {
+                "type": "integer",
+                "description": "Number of null values",
+                "examples": [150]
+              },
+              "null_percentage": {
+                "type": "number",
+                "description": "Percentage of null values",
+                "examples": [0.3]
+              },
+              "min": {
+                "description": "Minimum value",
+                "examples": [1, "2020-01-01"]
+              },
+              "max": {
+                "description": "Maximum value",
+                "examples": [999999, "2024-12-31"]
+              },
+              "mean": {
+                "type": "number",
+                "description": "Mean value (for numeric fields)",
+                "examples": [45678.5]
+              },
+              "median": {
+                "type": "number",
+                "description": "Median value (for numeric fields)",
+                "examples": [42000.0]
+              },
+              "stddev": {
+                "type": "number",
+                "description": "Standard deviation (for numeric fields)",
+                "examples": [15234.2]
+              }
+            }
+          },
+          "samples": {
+            "type": "array",
+            "description": "Sample values from the field",
+            "items": {},
+            "examples": [["john@example.com", "jane@company.org", "bob@test.net"]]
+          },
+          "governance": {
+            "type": "object",
+            "description": "Governance information for the field",
+            "properties": {
+              "classification": {
+                "type": "string",
+                "description": "Data classification level",
+                "enum": ["public", "internal", "confidential", "restricted", "pii", "phi", "pci"],
+                "examples": ["pii"]
+              },
+              "sensitivity": {
+                "type": "string",
+                "description": "Sensitivity level",
+                "enum": ["low", "medium", "high", "critical"],
+                "examples": ["high"]
+              },
+              "masking_policy": {
+                "type": "string",
+                "description": "Masking policy applied to this field",
+                "examples": ["email_mask", "full_redact", "partial_mask"]
+              },
+              "retention_days": {
+                "type": "integer",
+                "description": "Data retention period in days",
+                "examples": [365, 730, 2555]
+              }
+            }
+          },
+          "quality_metrics": {
+            "type": "object",
+            "description": "Data quality metrics for the field",
+            "properties": {
+              "completeness": {
+                "type": "number",
+                "description": "Percentage of non-null values",
+                "minimum": 0,
+                "maximum": 100,
+                "examples": [99.7]
+              },
+              "accuracy": {
+                "type": "number",
+                "description": "Accuracy score based on validation rules",
+                "minimum": 0,
+                "maximum": 100,
+                "examples": [98.5]
+              },
+              "consistency": {
+                "type": "number",
+                "description": "Consistency score across related datasets",
+                "minimum": 0,
+                "maximum": 100,
+                "examples": [99.2]
+              },
+              "freshness": {
+                "type": "string",
+                "description": "How recently the data was updated",
+                "examples": ["2 hours ago", "daily refresh"]
+              }
+            }
+          }
+        }
+      },
+      "examples": [
+        [
+          {
+            "name": "customer_id",
+            "type": "string",
+            "nullable": false,
+            "description": "Unique identifier for the customer",
+            "is_primary_key": true,
+            "statistics": {
+              "distinct_count": 50000,
+              "null_count": 0
+            }
+          },
+          {
+            "name": "email",
+            "type": "string",
+            "nullable": true,
+            "description": "Customer's primary email address",
+            "governance": {
+              "classification": "pii",
+              "sensitivity": "high",
+              "masking_policy": "email_mask"
+            }
+          }
+        ]
+      ]
+    },
+    "physical_location": {
+      "type": "object",
+      "description": "Physical storage location of the dataset",
+      "properties": {
+        "storage_type": {
+          "type": "string",
+          "description": "Type of storage",
+          "enum": ["s3", "gcs", "azure_blob", "hdfs", "jdbc", "kafka", "snowflake", "bigquery"],
+          "examples": ["s3"]
+        },
+        "location": {
+          "type": "string",
+          "description": "Physical location (path, table name, etc.)",
+          "examples": ["s3://data-lake/sales/customers/", "bigquery://project.dataset.customers"]
+        },
+        "format": {
+          "type": "string",
+          "description": "Data format",
+          "enum": ["parquet", "avro", "json", "csv", "orc", "delta", "iceberg"],
+          "examples": ["parquet"]
+        },
+        "partition_scheme": {
+          "type": "object",
+          "description": "Partitioning scheme if applicable",
+          "properties": {
+            "columns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "examples": [["year", "month"]]
+            },
+            "pattern": {
+              "type": "string",
+              "examples": ["year={yyyy}/month={MM}/"]
+            }
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "dataset_uri": "datamesh://sales/core/customers",
+      "dataset_metadata": {
+        "name": "Customer Master Data",
+        "description": "Core customer records including contact information and demographics",
+        "domain": "sales",
+        "product": "core",
+        "owner": {
+          "team": "sales-data-team",
+          "email": "sales-data@company.com"
+        },
+        "version": "v1.2.0",
+        "created_at": "2023-01-15T10:30:00Z",
+        "updated_at": "2024-12-01T14:22:00Z",
+        "tags": ["customer", "pii", "master-data"]
+      },
+      "fields": [
+        {
+          "name": "customer_id",
+          "type": "string",
+          "nullable": false,
+          "description": "Unique identifier for the customer",
+          "is_primary_key": true,
+          "statistics": {
+            "distinct_count": 50000,
+            "null_count": 0
+          }
+        },
+        {
+          "name": "email",
+          "type": "string",
+          "nullable": true,
+          "description": "Customer's primary email address",
+          "governance": {
+            "classification": "pii",
+            "sensitivity": "high",
+            "masking_policy": "email_mask"
+          },
+          "samples": ["j***@example.com", "s***@company.org"]
+        },
+        {
+          "name": "country",
+          "type": "string",
+          "nullable": false,
+          "description": "Customer's country of residence (ISO 3166-1 alpha-2)",
+          "constraints": {
+            "pattern": "^[A-Z]{2}$"
+          },
+          "statistics": {
+            "distinct_count": 42,
+            "null_count": 0
+          }
+        }
+      ],
+      "physical_location": {
+        "storage_type": "s3",
+        "location": "s3://data-lake/sales/customers/",
+        "format": "parquet",
+        "partition_scheme": {
+          "columns": ["year", "month"],
+          "pattern": "year={yyyy}/month={MM}/"
+        }
+      }
+    }
+  ]
+}

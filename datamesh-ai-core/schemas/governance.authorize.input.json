@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datamesh.ai/schemas/governance.authorize.input.json",
+  "title": "Governance Authorize Input",
+  "description": "Input schema for authorizing user access to datasets based on roles and policies",
+  "type": "object",
+  "required": ["user", "dataset", "permissions"],
+  "properties": {
+    "user": {
+      "type": "object",
+      "description": "Information about the user requesting access",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user",
+          "examples": ["user-123", "service-account-xyz"]
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User's email address",
+          "examples": ["john.doe@company.com"]
+        },
+        "name": {
+          "type": "string",
+          "description": "User's display name",
+          "examples": ["John Doe"]
+        },
+        "department": {
+          "type": "string",
+          "description": "User's department",
+          "examples": ["sales", "engineering", "finance"]
+        },
+        "location": {
+          "type": "string",
+          "description": "User's geographic location (for geo-restrictions)",
+          "examples": ["US", "EU", "APAC"]
+        },
+        "clearance_level": {
+          "type": "string",
+          "description": "User's security clearance level",
+          "enum": ["public", "internal", "confidential", "restricted", "top_secret"],
+          "examples": ["confidential"]
+        },
+        "attributes": {
+          "type": "object",
+          "description": "Additional user attributes for ABAC",
+          "additionalProperties": true,
+          "examples": [
+            {
+              "team": "analytics",
+              "project": "customer-360",
+              "is_contractor": false
+            }
+          ]
+        }
+      }
+    },
+    "roles": {
+      "type": "array",
+      "description": "Roles assigned to the user",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "examples": [
+        ["data-analyst", "sales-reader"],
+        ["admin"],
+        ["finance-analyst", "pii-viewer"]
+      ]
+    },
+    "dataset": {
+      "type": "object",
+      "description": "The dataset being accessed",
+      "required": ["uri"],
+      "properties": {
+        "uri": {
+          "type": "string",
+          "format": "uri",
+          "description": "The URI of the dataset",
+          "pattern": "^datamesh://[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+$",
+          "examples": ["datamesh://sales/core/customers"]
+        },
+        "columns": {
+          "type": "array",
+          "description": "Specific columns being accessed (if column-level access control)",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["customer_id", "name", "email", "phone"]]
+        },
+        "row_filter": {
+          "type": "string",
+          "description": "Row-level filter being applied (for row-level security check)",
+          "examples": ["country = 'USA'", "department = 'sales'"]
+        }
+      }
+    },
+    "permissions": {
+      "type": "array",
+      "description": "Permissions being requested",
+      "items": {
+        "type": "string",
+        "enum": ["read", "write", "delete", "admin", "export", "share", "mask_view", "raw_view"]
+      },
+      "minItems": 1,
+      "examples": [
+        ["read"],
+        ["read", "write"],
+        ["read", "export"]
+      ]
+    },
+    "context": {
+      "type": "object",
+      "description": "Additional context for the authorization decision",
+      "properties": {
+        "request_id": {
+          "type": "string",
+          "description": "Unique ID for this authorization request",
+          "examples": ["req-abc123"]
+        },
+        "purpose": {
+          "type": "string",
+          "description": "Stated purpose for accessing the data",
+          "examples": ["analytics_report", "customer_support", "regulatory_audit", "ml_training"]
+        },
+        "application": {
+          "type": "string",
+          "description": "Application making the request",
+          "examples": ["looker", "jupyter", "dbt", "airflow"]
+        },
+        "ip_address": {
+          "type": "string",
+          "format": "ipv4",
+          "description": "IP address of the request",
+          "examples": ["192.168.1.100"]
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of the request",
+          "examples": ["2024-12-20T14:30:00Z"]
+        },
+        "session_id": {
+          "type": "string",
+          "description": "Session identifier",
+          "examples": ["sess-xyz789"]
+        },
+        "query": {
+          "type": "string",
+          "description": "The query being executed (for query-level authorization)",
+          "examples": ["SELECT * FROM customers WHERE country = 'USA'"]
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "user": {
+        "id": "user-123",
+        "email": "john.doe@company.com",
+        "name": "John Doe",
+        "department": "sales",
+        "location": "US",
+        "clearance_level": "confidential"
+      },
+      "roles": ["data-analyst", "sales-reader"],
+      "dataset": {
+        "uri": "datamesh://sales/core/customers",
+        "columns": ["customer_id", "name", "email", "phone", "country"]
+      },
+      "permissions": ["read"],
+      "context": {
+        "request_id": "req-abc123",
+        "purpose": "analytics_report",
+        "application": "looker",
+        "timestamp": "2024-12-20T14:30:00Z"
+      }
+    },
+    {
+      "user": {
+        "id": "service-etl-001",
+        "department": "data-engineering",
+        "attributes": {
+          "service_type": "etl",
+          "environment": "production"
+        }
+      },
+      "roles": ["etl-service", "data-writer"],
+      "dataset": {
+        "uri": "datamesh://finance/core/transactions"
+      },
+      "permissions": ["read", "write"],
+      "context": {
+        "application": "airflow",
+        "purpose": "data_pipeline"
+      }
+    }
+  ]
+}

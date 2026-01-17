@@ -1,0 +1,322 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datamesh.ai/schemas/governance.redact.input.json",
+  "title": "Governance Redact Input",
+  "description": "Input schema for redacting/masking sensitive data based on policies",
+  "type": "object",
+  "required": ["data", "policies"],
+  "properties": {
+    "data": {
+      "type": "array",
+      "description": "The data records to redact",
+      "items": {
+        "type": "object",
+        "description": "A single data record with field-value pairs",
+        "additionalProperties": true
+      },
+      "examples": [
+        [
+          {
+            "customer_id": "CUST-001",
+            "name": "John Doe",
+            "email": "john.doe@example.com",
+            "phone": "+1-555-123-4567",
+            "ssn": "123-45-6789",
+            "credit_card": "4111-1111-1111-1111",
+            "address": "123 Main St, New York, NY 10001"
+          },
+          {
+            "customer_id": "CUST-002",
+            "name": "Jane Smith",
+            "email": "jane.smith@company.org",
+            "phone": "+1-555-987-6543",
+            "ssn": "987-65-4321",
+            "credit_card": "5500-0000-0000-0004",
+            "address": "456 Oak Ave, Los Angeles, CA 90001"
+          }
+        ]
+      ]
+    },
+    "policies": {
+      "type": "array",
+      "description": "Masking/redaction policies to apply",
+      "items": {
+        "type": "object",
+        "required": ["field", "masking_type"],
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "The field name to apply the policy to (supports wildcards)",
+            "examples": ["email", "ssn", "phone", "*.pii", "credit_*"]
+          },
+          "masking_type": {
+            "type": "string",
+            "description": "Type of masking to apply",
+            "enum": [
+              "full_redact",
+              "partial_mask",
+              "hash",
+              "tokenize",
+              "encrypt",
+              "nullify",
+              "email_mask",
+              "phone_mask",
+              "ssn_mask",
+              "credit_card_mask",
+              "name_mask",
+              "address_mask",
+              "date_generalize",
+              "number_round",
+              "custom"
+            ],
+            "examples": ["email_mask", "full_redact", "hash"]
+          },
+          "options": {
+            "type": "object",
+            "description": "Options specific to the masking type",
+            "properties": {
+              "mask_char": {
+                "type": "string",
+                "description": "Character to use for masking",
+                "default": "*",
+                "maxLength": 1,
+                "examples": ["*", "X", "#"]
+              },
+              "preserve_length": {
+                "type": "boolean",
+                "description": "Whether to preserve the original value's length",
+                "default": true,
+                "examples": [true, false]
+              },
+              "preserve_format": {
+                "type": "boolean",
+                "description": "Whether to preserve the format (e.g., dashes in SSN)",
+                "default": true,
+                "examples": [true]
+              },
+              "visible_chars_start": {
+                "type": "integer",
+                "description": "Number of characters to leave visible at the start",
+                "minimum": 0,
+                "default": 0,
+                "examples": [0, 2, 4]
+              },
+              "visible_chars_end": {
+                "type": "integer",
+                "description": "Number of characters to leave visible at the end",
+                "minimum": 0,
+                "default": 0,
+                "examples": [0, 4]
+              },
+              "hash_algorithm": {
+                "type": "string",
+                "description": "Hash algorithm to use (for hash masking type)",
+                "enum": ["sha256", "sha512", "md5", "blake2"],
+                "default": "sha256",
+                "examples": ["sha256"]
+              },
+              "hash_salt": {
+                "type": "string",
+                "description": "Salt to use for hashing (reference to secret)",
+                "examples": ["${secrets.hash_salt}"]
+              },
+              "encryption_key": {
+                "type": "string",
+                "description": "Encryption key reference (for encrypt masking type)",
+                "examples": ["${secrets.encryption_key}"]
+              },
+              "tokenization_vault": {
+                "type": "string",
+                "description": "Tokenization vault to use (for tokenize masking type)",
+                "examples": ["vault://pii-tokens"]
+              },
+              "replacement_value": {
+                "type": "string",
+                "description": "Fixed replacement value (for full_redact)",
+                "examples": ["[REDACTED]", "N/A", "***"]
+              },
+              "generalization_level": {
+                "type": "string",
+                "description": "Level of generalization (for date/number generalization)",
+                "enum": ["year", "month", "decade", "tens", "hundreds", "thousands"],
+                "examples": ["year", "tens"]
+              },
+              "custom_function": {
+                "type": "string",
+                "description": "Custom masking function reference (for custom type)",
+                "examples": ["mask_functions.custom_address_mask"]
+              }
+            }
+          },
+          "condition": {
+            "type": "string",
+            "description": "Condition for when to apply this policy (optional)",
+            "examples": [
+              "record.country != 'US'",
+              "record.classification == 'pii'"
+            ]
+          },
+          "priority": {
+            "type": "integer",
+            "description": "Priority of this policy (higher = applied first)",
+            "default": 100,
+            "examples": [100, 200, 50]
+          }
+        }
+      },
+      "examples": [
+        [
+          {
+            "field": "email",
+            "masking_type": "email_mask",
+            "options": {
+              "visible_chars_start": 2
+            }
+          },
+          {
+            "field": "ssn",
+            "masking_type": "ssn_mask",
+            "options": {
+              "visible_chars_end": 4,
+              "preserve_format": true
+            }
+          },
+          {
+            "field": "credit_card",
+            "masking_type": "credit_card_mask",
+            "options": {
+              "visible_chars_end": 4
+            }
+          },
+          {
+            "field": "phone",
+            "masking_type": "partial_mask",
+            "options": {
+              "visible_chars_end": 4,
+              "mask_char": "*"
+            }
+          }
+        ]
+      ]
+    },
+    "context": {
+      "type": "object",
+      "description": "Context for the redaction operation",
+      "properties": {
+        "user": {
+          "type": "object",
+          "description": "User context (may affect redaction rules)",
+          "properties": {
+            "id": {
+              "type": "string",
+              "examples": ["user-123"]
+            },
+            "roles": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "examples": [["data-analyst"]]
+            },
+            "clearance_level": {
+              "type": "string",
+              "examples": ["internal"]
+            }
+          }
+        },
+        "dataset_uri": {
+          "type": "string",
+          "format": "uri",
+          "description": "URI of the dataset being redacted",
+          "examples": ["datamesh://sales/core/customers"]
+        },
+        "purpose": {
+          "type": "string",
+          "description": "Purpose of data access",
+          "examples": ["analytics", "reporting", "export"]
+        },
+        "reversible": {
+          "type": "boolean",
+          "description": "Whether the redaction should be reversible",
+          "default": false,
+          "examples": [true, false]
+        },
+        "audit": {
+          "type": "boolean",
+          "description": "Whether to include detailed audit information in output",
+          "default": true,
+          "examples": [true]
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "data": [
+        {
+          "customer_id": "CUST-001",
+          "name": "John Doe",
+          "email": "john.doe@example.com",
+          "phone": "+1-555-123-4567",
+          "ssn": "123-45-6789",
+          "credit_card": "4111-1111-1111-1111",
+          "address": "123 Main St, New York, NY 10001",
+          "revenue": 50000.00
+        }
+      ],
+      "policies": [
+        {
+          "field": "email",
+          "masking_type": "email_mask",
+          "options": {
+            "visible_chars_start": 2
+          }
+        },
+        {
+          "field": "ssn",
+          "masking_type": "ssn_mask",
+          "options": {
+            "visible_chars_end": 4,
+            "preserve_format": true
+          }
+        },
+        {
+          "field": "credit_card",
+          "masking_type": "credit_card_mask",
+          "options": {
+            "visible_chars_end": 4
+          }
+        },
+        {
+          "field": "phone",
+          "masking_type": "partial_mask",
+          "options": {
+            "visible_chars_end": 4,
+            "mask_char": "*"
+          }
+        },
+        {
+          "field": "address",
+          "masking_type": "address_mask"
+        },
+        {
+          "field": "name",
+          "masking_type": "name_mask",
+          "options": {
+            "visible_chars_start": 1
+          }
+        }
+      ],
+      "context": {
+        "user": {
+          "id": "analyst-001",
+          "roles": ["data-analyst"],
+          "clearance_level": "internal"
+        },
+        "dataset_uri": "datamesh://sales/core/customers",
+        "purpose": "analytics",
+        "audit": true
+      }
+    }
+  ]
+}

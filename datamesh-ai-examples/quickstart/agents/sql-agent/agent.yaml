@@ -1,0 +1,124 @@
+# SQL Agent Configuration
+# =======================
+# This agent interprets natural language questions and generates SQL queries
+
+agent:
+  name: sql-agent
+  version: "1.0.0"
+  description: "Interprets natural language questions and generates SQL queries"
+
+  # Agent identification
+  id: sql-agent-001
+  type: query-generator
+
+# Server configuration
+server:
+  host: 0.0.0.0
+  port: 8081
+  tls:
+    enabled: true
+    cert: ../../certs/sql-agent.crt
+    key: ../../certs/sql-agent.key
+    ca: ../../certs/ca.crt
+
+# Capabilities this agent provides
+capabilities:
+  - name: sql.generate
+    description: "Generate SQL from natural language question"
+    inputSchema:
+      type: object
+      properties:
+        question:
+          type: string
+          description: "Natural language question"
+        context:
+          type: object
+          description: "Additional context (schema info, etc.)"
+      required:
+        - question
+    outputSchema:
+      type: object
+      properties:
+        sql:
+          type: string
+        explanation:
+          type: string
+        confidence:
+          type: number
+
+  - name: sql.validate
+    description: "Validate SQL syntax and semantics"
+    inputSchema:
+      type: object
+      properties:
+        sql:
+          type: string
+      required:
+        - sql
+    outputSchema:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        errors:
+          type: array
+          items:
+            type: string
+
+  - name: sql.optimize
+    description: "Optimize SQL query for performance"
+    inputSchema:
+      type: object
+      properties:
+        sql:
+          type: string
+        targetDatabase:
+          type: string
+      required:
+        - sql
+    outputSchema:
+      type: object
+      properties:
+        optimizedSql:
+          type: string
+        improvements:
+          type: array
+          items:
+            type: string
+
+# Dependencies on other agents
+dependencies:
+  - agentId: catalog-agent
+    capabilities:
+      - catalog.resolve
+      - catalog.lineage
+  - agentId: governance-agent
+    capabilities:
+      - governance.authorize
+
+# Observability configuration
+observability:
+  tracing:
+    enabled: true
+    exporter: otlp
+    endpoint: http://localhost:4317
+  metrics:
+    enabled: true
+    endpoint: http://localhost:4317
+  logging:
+    level: INFO
+    format: json
+    output: ../../logs/sql-agent.log
+
+# Policy enforcement
+policies:
+  - path: ../../policies/rgpd.yaml
+  - path: ../../policies/data-retention.yaml
+
+# LLM configuration (for SQL generation)
+llm:
+  provider: anthropic
+  model: claude-3-5-sonnet-20241022
+  maxTokens: 4096
+  temperature: 0.0
+  # API key should be in environment variable ANTHROPIC_API_KEY

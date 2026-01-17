@@ -1,0 +1,388 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datamesh.ai/schemas/governance.redact.output.json",
+  "title": "Governance Redact Output",
+  "description": "Output schema for redacted/masked data with audit trail of masking applied",
+  "type": "object",
+  "required": ["redacted_data", "masking_applied"],
+  "properties": {
+    "redacted_data": {
+      "type": "array",
+      "description": "The data records with redaction/masking applied",
+      "items": {
+        "type": "object",
+        "description": "A single redacted data record",
+        "additionalProperties": true
+      },
+      "examples": [
+        [
+          {
+            "customer_id": "CUST-001",
+            "name": "J*** D**",
+            "email": "jo****@***.com",
+            "phone": "***-***-4567",
+            "ssn": "***-**-6789",
+            "credit_card": "****-****-****-1111",
+            "address": "*** Main St, ***, ** *****"
+          },
+          {
+            "customer_id": "CUST-002",
+            "name": "J*** S****",
+            "email": "ja****@***.org",
+            "phone": "***-***-6543",
+            "ssn": "***-**-4321",
+            "credit_card": "****-****-****-0004",
+            "address": "*** Oak Ave, ***, ** *****"
+          }
+        ]
+      ]
+    },
+    "masking_applied": {
+      "type": "array",
+      "description": "Details of masking operations applied to each field",
+      "items": {
+        "type": "object",
+        "required": ["field", "masking_type", "records_affected"],
+        "properties": {
+          "field": {
+            "type": "string",
+            "description": "The field that was masked",
+            "examples": ["email", "ssn", "credit_card"]
+          },
+          "masking_type": {
+            "type": "string",
+            "description": "Type of masking applied",
+            "examples": ["email_mask", "ssn_mask", "partial_mask", "full_redact"]
+          },
+          "records_affected": {
+            "type": "integer",
+            "description": "Number of records where this field was masked",
+            "examples": [100, 50, 1000]
+          },
+          "policy_id": {
+            "type": "string",
+            "description": "ID of the policy that triggered this masking",
+            "examples": ["policy-pii-email-001"]
+          },
+          "original_data_type": {
+            "type": "string",
+            "description": "Original data type of the field",
+            "examples": ["string", "integer", "timestamp"]
+          },
+          "masked_data_type": {
+            "type": "string",
+            "description": "Data type after masking (usually same as original)",
+            "examples": ["string"]
+          },
+          "options_used": {
+            "type": "object",
+            "description": "Masking options that were applied",
+            "additionalProperties": true,
+            "examples": [
+              {
+                "visible_chars_start": 2,
+                "mask_char": "*"
+              }
+            ]
+          },
+          "reversible": {
+            "type": "boolean",
+            "description": "Whether this masking can be reversed",
+            "examples": [true, false]
+          },
+          "token_vault": {
+            "type": "string",
+            "description": "Token vault reference if tokenization was used",
+            "examples": ["vault://pii-tokens/batch-123"]
+          }
+        }
+      },
+      "examples": [
+        [
+          {
+            "field": "email",
+            "masking_type": "email_mask",
+            "records_affected": 2,
+            "policy_id": "policy-pii-email-001",
+            "original_data_type": "string",
+            "masked_data_type": "string",
+            "options_used": {
+              "visible_chars_start": 2,
+              "preserve_format": true
+            },
+            "reversible": false
+          },
+          {
+            "field": "ssn",
+            "masking_type": "ssn_mask",
+            "records_affected": 2,
+            "policy_id": "policy-pii-ssn-001",
+            "options_used": {
+              "visible_chars_end": 4,
+              "preserve_format": true
+            },
+            "reversible": false
+          },
+          {
+            "field": "credit_card",
+            "masking_type": "credit_card_mask",
+            "records_affected": 2,
+            "policy_id": "policy-pci-001",
+            "options_used": {
+              "visible_chars_end": 4
+            },
+            "reversible": false
+          }
+        ]
+      ]
+    },
+    "summary": {
+      "type": "object",
+      "description": "Summary of the redaction operation",
+      "properties": {
+        "total_records": {
+          "type": "integer",
+          "description": "Total number of records processed",
+          "examples": [100, 1000]
+        },
+        "records_modified": {
+          "type": "integer",
+          "description": "Number of records that had at least one field masked",
+          "examples": [95, 1000]
+        },
+        "records_unchanged": {
+          "type": "integer",
+          "description": "Number of records with no masking applied",
+          "examples": [5, 0]
+        },
+        "fields_masked": {
+          "type": "integer",
+          "description": "Total number of unique fields masked",
+          "examples": [6]
+        },
+        "total_values_masked": {
+          "type": "integer",
+          "description": "Total number of individual values masked",
+          "examples": [600]
+        },
+        "policies_applied": {
+          "type": "integer",
+          "description": "Number of policies that were applied",
+          "examples": [6]
+        },
+        "processing_time_ms": {
+          "type": "number",
+          "description": "Time taken to process the redaction in milliseconds",
+          "examples": [45.5, 150.2]
+        }
+      }
+    },
+    "audit": {
+      "type": "object",
+      "description": "Audit information for the redaction operation",
+      "properties": {
+        "operation_id": {
+          "type": "string",
+          "description": "Unique identifier for this redaction operation",
+          "examples": ["redact-op-abc123"]
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the redaction was performed",
+          "examples": ["2024-12-20T14:30:00.123Z"]
+        },
+        "user_id": {
+          "type": "string",
+          "description": "ID of the user who triggered the redaction",
+          "examples": ["user-123"]
+        },
+        "purpose": {
+          "type": "string",
+          "description": "Stated purpose for the data access",
+          "examples": ["analytics", "reporting"]
+        },
+        "dataset_uri": {
+          "type": "string",
+          "description": "URI of the dataset that was redacted",
+          "examples": ["datamesh://sales/core/customers"]
+        },
+        "data_hash_before": {
+          "type": "string",
+          "description": "Hash of input data for integrity verification",
+          "examples": ["sha256:abc123..."]
+        },
+        "data_hash_after": {
+          "type": "string",
+          "description": "Hash of output data for integrity verification",
+          "examples": ["sha256:def456..."]
+        },
+        "compliance_tags": {
+          "type": "array",
+          "description": "Compliance frameworks this redaction supports",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["GDPR", "CCPA", "PCI-DSS", "HIPAA"]]
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Warnings generated during the redaction process",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Warning code",
+            "examples": ["FIELD_NOT_FOUND", "PARTIAL_MASK_FAILED", "NULL_VALUE"]
+          },
+          "message": {
+            "type": "string",
+            "description": "Warning message",
+            "examples": [
+              "Field 'middle_name' specified in policy but not found in data",
+              "Could not apply partial mask to field 'phone' - value too short"
+            ]
+          },
+          "field": {
+            "type": "string",
+            "description": "Field related to the warning",
+            "examples": ["middle_name", "phone"]
+          },
+          "record_indices": {
+            "type": "array",
+            "description": "Indices of records affected by this warning",
+            "items": {
+              "type": "integer"
+            },
+            "examples": [[0, 5, 12]]
+          }
+        }
+      }
+    },
+    "token_mappings": {
+      "type": "object",
+      "description": "Token mappings if tokenization was used (for reversible masking)",
+      "properties": {
+        "vault_reference": {
+          "type": "string",
+          "description": "Reference to the token vault where mappings are stored",
+          "examples": ["vault://pii-tokens/batch-abc123"]
+        },
+        "fields_tokenized": {
+          "type": "array",
+          "description": "List of fields that were tokenized",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["ssn", "credit_card"]]
+        },
+        "tokens_created": {
+          "type": "integer",
+          "description": "Number of tokens created",
+          "examples": [200]
+        },
+        "expiry": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the tokens expire",
+          "examples": ["2025-12-20T00:00:00Z"]
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "redacted_data": [
+        {
+          "customer_id": "CUST-001",
+          "name": "J*** D**",
+          "email": "jo****@***.com",
+          "phone": "***-***-4567",
+          "ssn": "***-**-6789",
+          "credit_card": "****-****-****-1111",
+          "address": "*** Main St, ***, ** *****",
+          "revenue": 50000.00
+        }
+      ],
+      "masking_applied": [
+        {
+          "field": "name",
+          "masking_type": "name_mask",
+          "records_affected": 1,
+          "policy_id": "policy-pii-name-001",
+          "options_used": {
+            "visible_chars_start": 1
+          },
+          "reversible": false
+        },
+        {
+          "field": "email",
+          "masking_type": "email_mask",
+          "records_affected": 1,
+          "policy_id": "policy-pii-email-001",
+          "options_used": {
+            "visible_chars_start": 2
+          },
+          "reversible": false
+        },
+        {
+          "field": "phone",
+          "masking_type": "partial_mask",
+          "records_affected": 1,
+          "options_used": {
+            "visible_chars_end": 4,
+            "mask_char": "*"
+          },
+          "reversible": false
+        },
+        {
+          "field": "ssn",
+          "masking_type": "ssn_mask",
+          "records_affected": 1,
+          "policy_id": "policy-pii-ssn-001",
+          "options_used": {
+            "visible_chars_end": 4,
+            "preserve_format": true
+          },
+          "reversible": false
+        },
+        {
+          "field": "credit_card",
+          "masking_type": "credit_card_mask",
+          "records_affected": 1,
+          "policy_id": "policy-pci-001",
+          "options_used": {
+            "visible_chars_end": 4
+          },
+          "reversible": false
+        },
+        {
+          "field": "address",
+          "masking_type": "address_mask",
+          "records_affected": 1,
+          "reversible": false
+        }
+      ],
+      "summary": {
+        "total_records": 1,
+        "records_modified": 1,
+        "records_unchanged": 0,
+        "fields_masked": 6,
+        "total_values_masked": 6,
+        "policies_applied": 6,
+        "processing_time_ms": 12.5
+      },
+      "audit": {
+        "operation_id": "redact-op-abc123",
+        "timestamp": "2024-12-20T14:30:00.123Z",
+        "user_id": "analyst-001",
+        "purpose": "analytics",
+        "dataset_uri": "datamesh://sales/core/customers",
+        "compliance_tags": ["GDPR", "CCPA", "PCI-DSS"]
+      }
+    }
+  ]
+}

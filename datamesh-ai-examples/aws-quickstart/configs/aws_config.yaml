@@ -1,0 +1,89 @@
+# DataMesh.AI AWS Configuration
+# =============================
+# Configuration for connecting to Talki AWS infrastructure
+
+aws:
+  region: eu-west-1
+
+  # Athena settings
+  athena:
+    database: talki_metrics_prod
+    workgroup: primary
+    output_location: s3://talki-athena-results-eu-west-1/datamesh-ai/
+    max_wait_seconds: 300
+
+  # Glue Catalog settings
+  glue:
+    # Filter to only show Talki databases
+    database_filter: "talki_.*"
+
+  # S3 buckets available
+  s3_buckets:
+    metrics: talki-metrics-dev
+    data: talki-data-dev
+    athena_results: talki-athena-results-eu-west-1
+
+# DataMesh.AI orchestrator settings
+orchestrator:
+  host: "0.0.0.0"
+  port: 8080
+
+# Agent configurations
+agents:
+  sql-agent:
+    host: "0.0.0.0"
+    port: 8081
+    capabilities:
+      - sql.generate
+      - sql.validate
+      - sql.optimize
+    connectors:
+      - type: athena
+        ref: aws.athena
+
+  catalog-agent:
+    host: "0.0.0.0"
+    port: 8082
+    capabilities:
+      - catalog.resolve
+      - catalog.lineage
+      - catalog.search
+    connectors:
+      - type: glue
+        ref: aws.glue
+
+  governance-agent:
+    host: "0.0.0.0"
+    port: 8083
+    capabilities:
+      - governance.authorize
+      - governance.audit
+      - governance.classify
+
+# Governance policies
+policies:
+  - name: talki-data-privacy
+    description: "Privacy policy for Talki user data"
+    rules:
+      # Hash all family and child IDs
+      - column_pattern: ".*_id_hash"
+        action: allow
+        note: "Pre-hashed identifiers are safe"
+      # Restrict raw IDs
+      - column_pattern: "family_id|child_id|user_id"
+        action: mask
+        method: hash_sha256
+      # Allow cost and performance metrics
+      - column_pattern: "cost_.*|latency_.*|duration_.*"
+        action: allow
+
+# Observability
+observability:
+  tracing:
+    enabled: true
+    exporter: otlp
+    endpoint: http://localhost:4318
+  audit:
+    enabled: true
+    storage: filesystem
+    path: ./logs/audit/

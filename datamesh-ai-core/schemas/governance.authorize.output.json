@@ -1,0 +1,376 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datamesh.ai/schemas/governance.authorize.output.json",
+  "title": "Governance Authorize Output",
+  "description": "Output schema for authorization decision with detailed reasons and applied policies",
+  "type": "object",
+  "required": ["allowed", "policies_applied"],
+  "properties": {
+    "allowed": {
+      "type": "boolean",
+      "description": "Whether the access is allowed",
+      "examples": [true, false]
+    },
+    "reasons": {
+      "type": "array",
+      "description": "Detailed reasons for the authorization decision",
+      "items": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Machine-readable reason code",
+            "examples": [
+              "ROLE_GRANTED",
+              "POLICY_DENIED",
+              "COLUMN_RESTRICTED",
+              "GEO_BLOCKED",
+              "TIME_RESTRICTED",
+              "PURPOSE_NOT_ALLOWED",
+              "CLEARANCE_INSUFFICIENT"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable explanation",
+            "examples": [
+              "Access granted via role 'sales-reader'",
+              "Access denied: PII columns require 'pii-viewer' role",
+              "Access denied: Data not accessible from EU locations"
+            ]
+          },
+          "permission": {
+            "type": "string",
+            "description": "The permission this reason relates to",
+            "examples": ["read", "write", "export"]
+          },
+          "resource": {
+            "type": "string",
+            "description": "The specific resource (column, row filter) this reason relates to",
+            "examples": ["column:email", "column:ssn", "dataset:customers"]
+          },
+          "policy_id": {
+            "type": "string",
+            "description": "ID of the policy that generated this reason",
+            "examples": ["policy-pii-protection-001"]
+          }
+        }
+      },
+      "examples": [
+        [
+          {
+            "code": "ROLE_GRANTED",
+            "message": "Read access granted via role 'sales-reader'",
+            "permission": "read",
+            "resource": "dataset:customers"
+          },
+          {
+            "code": "COLUMN_RESTRICTED",
+            "message": "Column 'ssn' requires 'pii-viewer' role",
+            "permission": "read",
+            "resource": "column:ssn",
+            "policy_id": "policy-pii-001"
+          }
+        ]
+      ]
+    },
+    "policies_applied": {
+      "type": "array",
+      "description": "Policies that were evaluated for this authorization decision",
+      "items": {
+        "type": "object",
+        "required": ["policy_id", "policy_name", "result"],
+        "properties": {
+          "policy_id": {
+            "type": "string",
+            "description": "Unique identifier for the policy",
+            "examples": ["policy-sales-access-001"]
+          },
+          "policy_name": {
+            "type": "string",
+            "description": "Human-readable name of the policy",
+            "examples": ["Sales Department Data Access Policy"]
+          },
+          "policy_type": {
+            "type": "string",
+            "description": "Type of policy",
+            "enum": ["rbac", "abac", "row_level", "column_level", "time_based", "geo_based", "purpose_based"],
+            "examples": ["rbac", "column_level"]
+          },
+          "result": {
+            "type": "string",
+            "description": "Result of policy evaluation",
+            "enum": ["allow", "deny", "not_applicable", "conditional"],
+            "examples": ["allow", "deny"]
+          },
+          "priority": {
+            "type": "integer",
+            "description": "Priority of the policy (higher = more important)",
+            "examples": [100, 50, 10]
+          },
+          "conditions_evaluated": {
+            "type": "array",
+            "description": "Conditions that were evaluated",
+            "items": {
+              "type": "object",
+              "properties": {
+                "condition": {
+                  "type": "string",
+                  "description": "The condition expression",
+                  "examples": ["user.department == 'sales'", "user.roles CONTAINS 'pii-viewer'"]
+                },
+                "result": {
+                  "type": "boolean",
+                  "description": "Result of the condition evaluation",
+                  "examples": [true, false]
+                }
+              }
+            }
+          }
+        }
+      },
+      "examples": [
+        [
+          {
+            "policy_id": "policy-sales-access-001",
+            "policy_name": "Sales Department Data Access",
+            "policy_type": "rbac",
+            "result": "allow",
+            "priority": 100,
+            "conditions_evaluated": [
+              {
+                "condition": "user.roles CONTAINS 'sales-reader'",
+                "result": true
+              }
+            ]
+          },
+          {
+            "policy_id": "policy-pii-protection-001",
+            "policy_name": "PII Column Protection",
+            "policy_type": "column_level",
+            "result": "deny",
+            "priority": 200,
+            "conditions_evaluated": [
+              {
+                "condition": "column IN ['ssn', 'credit_card'] AND user.roles NOT CONTAINS 'pii-viewer'",
+                "result": true
+              }
+            ]
+          }
+        ]
+      ]
+    },
+    "effective_permissions": {
+      "type": "object",
+      "description": "The effective permissions after all policies are applied",
+      "properties": {
+        "dataset_level": {
+          "type": "array",
+          "description": "Permissions granted at dataset level",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["read"], ["read", "write"]]
+        },
+        "column_permissions": {
+          "type": "object",
+          "description": "Per-column permissions",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "allowed": {
+                "type": "boolean",
+                "examples": [true, false]
+              },
+              "masking_required": {
+                "type": "boolean",
+                "examples": [true, false]
+              },
+              "masking_policy": {
+                "type": "string",
+                "examples": ["email_mask", "full_redact", "hash"]
+              }
+            }
+          },
+          "examples": [
+            {
+              "customer_id": {"allowed": true, "masking_required": false},
+              "name": {"allowed": true, "masking_required": false},
+              "email": {"allowed": true, "masking_required": true, "masking_policy": "email_mask"},
+              "ssn": {"allowed": false}
+            }
+          ]
+        },
+        "row_filter": {
+          "type": "string",
+          "description": "Row-level filter that must be applied",
+          "examples": ["country = 'USA'", "department = user.department"]
+        }
+      }
+    },
+    "access_token": {
+      "type": "object",
+      "description": "Access token for the authorized request (if applicable)",
+      "properties": {
+        "token": {
+          "type": "string",
+          "description": "The access token",
+          "examples": ["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."]
+        },
+        "expires_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the token expires",
+          "examples": ["2024-12-20T15:30:00Z"]
+        },
+        "scope": {
+          "type": "array",
+          "description": "Scope of the token",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["read:customers", "read:orders"]]
+        }
+      }
+    },
+    "audit": {
+      "type": "object",
+      "description": "Audit information for the authorization decision",
+      "properties": {
+        "decision_id": {
+          "type": "string",
+          "description": "Unique ID for this authorization decision",
+          "examples": ["auth-dec-abc123"]
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the decision was made",
+          "examples": ["2024-12-20T14:30:00.123Z"]
+        },
+        "decision_time_ms": {
+          "type": "number",
+          "description": "Time taken to make the decision in milliseconds",
+          "examples": [15.5, 3.2]
+        },
+        "policies_evaluated_count": {
+          "type": "integer",
+          "description": "Number of policies evaluated",
+          "examples": [5, 12]
+        }
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "description": "Recommendations for the user if access was denied",
+      "items": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "Recommended action",
+            "examples": ["request_role", "contact_owner", "use_masked_view"]
+          },
+          "description": {
+            "type": "string",
+            "description": "Description of the recommendation",
+            "examples": [
+              "Request the 'pii-viewer' role from your manager",
+              "Contact the data owner at sales-data@company.com for access",
+              "Use the masked view 'customers_masked' which redacts sensitive columns"
+            ]
+          },
+          "link": {
+            "type": "string",
+            "format": "uri",
+            "description": "Link to take the recommended action",
+            "examples": ["https://access-portal.company.com/request-role"]
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "allowed": true,
+      "reasons": [
+        {
+          "code": "ROLE_GRANTED",
+          "message": "Read access granted via role 'sales-reader'",
+          "permission": "read",
+          "resource": "dataset:customers"
+        }
+      ],
+      "policies_applied": [
+        {
+          "policy_id": "policy-sales-access-001",
+          "policy_name": "Sales Department Data Access",
+          "policy_type": "rbac",
+          "result": "allow",
+          "priority": 100
+        }
+      ],
+      "effective_permissions": {
+        "dataset_level": ["read"],
+        "column_permissions": {
+          "customer_id": {"allowed": true, "masking_required": false},
+          "name": {"allowed": true, "masking_required": false},
+          "email": {"allowed": true, "masking_required": true, "masking_policy": "email_mask"},
+          "phone": {"allowed": true, "masking_required": true, "masking_policy": "partial_mask"}
+        }
+      },
+      "audit": {
+        "decision_id": "auth-dec-abc123",
+        "timestamp": "2024-12-20T14:30:00.123Z",
+        "decision_time_ms": 12.5,
+        "policies_evaluated_count": 3
+      }
+    },
+    {
+      "allowed": false,
+      "reasons": [
+        {
+          "code": "CLEARANCE_INSUFFICIENT",
+          "message": "Access denied: Dataset requires 'restricted' clearance level, user has 'internal'",
+          "permission": "read",
+          "resource": "dataset:financial_records",
+          "policy_id": "policy-clearance-001"
+        }
+      ],
+      "policies_applied": [
+        {
+          "policy_id": "policy-clearance-001",
+          "policy_name": "Security Clearance Requirements",
+          "policy_type": "abac",
+          "result": "deny",
+          "priority": 1000,
+          "conditions_evaluated": [
+            {
+              "condition": "user.clearance_level >= dataset.required_clearance",
+              "result": false
+            }
+          ]
+        }
+      ],
+      "recommendations": [
+        {
+          "action": "request_clearance_upgrade",
+          "description": "Request a clearance upgrade to 'restricted' level through your security officer",
+          "link": "https://security-portal.company.com/clearance-request"
+        },
+        {
+          "action": "use_summary_view",
+          "description": "Use the aggregated summary view 'financial_summary' which doesn't require elevated clearance",
+          "link": "datamesh://finance/reporting/financial_summary"
+        }
+      ],
+      "audit": {
+        "decision_id": "auth-dec-def456",
+        "timestamp": "2024-12-20T14:35:00.456Z",
+        "decision_time_ms": 8.2,
+        "policies_evaluated_count": 5
+      }
+    }
+  ]
+}

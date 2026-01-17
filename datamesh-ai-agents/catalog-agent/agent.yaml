@@ -1,0 +1,140 @@
+apiVersion: datamesh.ai/v1
+kind: Agent
+metadata:
+  name: catalog-agent
+  team: data-platform
+  version: "1.0.0"
+  description: |
+    Catalog Agent provides schema resolution and lineage tracking capabilities
+    for the DATAMESH.AI framework. It resolves dataset URIs to field metadata
+    and tracks upstream/downstream data lineage relationships.
+  labels:
+    domain: data-catalog
+    tier: platform
+spec:
+  capabilities:
+    - name: catalog.resolve
+      description: Resolves a dataset URI to field metadata including name, type, and nullable properties
+      input:
+        type: object
+        properties:
+          dataset_uri:
+            type: string
+            description: The catalog URI of the dataset (e.g., catalog://finance.customer_transactions)
+            pattern: "^catalog://[a-z_]+\\.[a-z_]+$"
+        required:
+          - dataset_uri
+      output:
+        type: object
+        properties:
+          dataset_uri:
+            type: string
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                type:
+                  type: string
+                nullable:
+                  type: boolean
+          resolved_at:
+            type: string
+            format: date-time
+
+    - name: catalog.lineage
+      description: Returns upstream and downstream lineage for a dataset URI
+      input:
+        type: object
+        properties:
+          dataset_uri:
+            type: string
+            description: The catalog URI of the dataset
+            pattern: "^catalog://[a-z_]+\\.[a-z_]+$"
+          depth:
+            type: integer
+            description: Maximum depth of lineage traversal (default 3)
+            minimum: 1
+            maximum: 10
+            default: 3
+        required:
+          - dataset_uri
+      output:
+        type: object
+        properties:
+          dataset_uri:
+            type: string
+          upstream:
+            type: array
+            items:
+              type: object
+              properties:
+                uri:
+                  type: string
+                relationship:
+                  type: string
+                transformation:
+                  type: string
+          downstream:
+            type: array
+            items:
+              type: object
+              properties:
+                uri:
+                  type: string
+                relationship:
+                  type: string
+                transformation:
+                  type: string
+          lineage_depth:
+            type: integer
+          traced_at:
+            type: string
+            format: date-time
+
+  a2a:
+    canCall:
+      - name: governance-agent
+        capabilities:
+          - governance.check_permission
+        reason: Permission checks before resolving sensitive schemas
+    calledBy:
+      - name: sql-agent
+        capabilities:
+          - catalog.resolve
+          - catalog.lineage
+      - name: spark-agent
+        capabilities:
+          - catalog.resolve
+          - catalog.lineage
+
+  runtime:
+    language: python
+    version: "3.10+"
+    entrypoint: catalog_agent.handler:handle_request
+    healthcheck:
+      endpoint: /health
+      interval: 30s
+      timeout: 5s
+
+  observability:
+    tracing:
+      enabled: true
+      provider: opentelemetry
+      sampling_rate: 1.0
+    logging:
+      level: INFO
+      format: json
+    metrics:
+      enabled: true
+      namespace: datamesh.catalog_agent
+
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"

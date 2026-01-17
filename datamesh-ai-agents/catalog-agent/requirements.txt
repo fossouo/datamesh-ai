@@ -1,0 +1,33 @@
+# DATAMESH.AI Catalog Agent Dependencies
+
+# OpenTelemetry for observability
+opentelemetry-api>=1.20.0
+opentelemetry-sdk>=1.20.0
+opentelemetry-exporter-otlp>=1.20.0
+opentelemetry-instrumentation>=0.41b0
+
+# Data validation
+pydantic>=2.0.0
+
+# Async support
+aiohttp>=3.9.0
+
+# JSON Schema validation
+jsonschema>=4.20.0
+
+# Logging
+structlog>=23.2.0
+
+# HTTP client for A2A communication
+httpx>=0.25.0
+
+# Type checking support
+typing-extensions>=4.8.0
+
+# Environment configuration
+python-dotenv>=1.0.0
+
+# Testing (development)
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0

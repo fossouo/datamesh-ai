@@ -1,0 +1,276 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datamesh.ai/schemas/sql.optimize.output.json",
+  "title": "SQL Optimize Output",
+  "description": "Output schema for SQL optimization containing the optimized query and improvements made",
+  "type": "object",
+  "required": ["optimized_sql", "improvements_made"],
+  "properties": {
+    "optimized_sql": {
+      "type": "string",
+      "description": "The optimized SQL query",
+      "minLength": 1,
+      "examples": [
+        "SELECT o.* FROM orders o INNER JOIN customers c ON o.customer_id = c.customer_id WHERE c.country = 'USA'"
+      ]
+    },
+    "improvements_made": {
+      "type": "array",
+      "description": "List of optimizations applied to the query",
+      "items": {
+        "type": "object",
+        "required": ["optimization_type", "description"],
+        "properties": {
+          "optimization_type": {
+            "type": "string",
+            "description": "Type of optimization applied",
+            "enum": [
+              "subquery_to_join",
+              "predicate_pushdown",
+              "join_reordering",
+              "index_hints",
+              "partition_pruning",
+              "column_pruning",
+              "constant_folding",
+              "distinct_elimination",
+              "union_merge",
+              "cte_materialization",
+              "aggregate_pushdown",
+              "limit_pushdown",
+              "redundant_join_removal",
+              "expression_simplification"
+            ],
+            "examples": ["subquery_to_join", "predicate_pushdown"]
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of the optimization",
+            "examples": ["Converted IN subquery to INNER JOIN for better performance"]
+          },
+          "before": {
+            "type": "string",
+            "description": "The SQL fragment before optimization",
+            "examples": ["WHERE customer_id IN (SELECT customer_id FROM customers WHERE country = 'USA')"]
+          },
+          "after": {
+            "type": "string",
+            "description": "The SQL fragment after optimization",
+            "examples": ["INNER JOIN customers c ON o.customer_id = c.customer_id WHERE c.country = 'USA'"]
+          },
+          "estimated_improvement": {
+            "type": "object",
+            "description": "Estimated performance improvement from this optimization",
+            "properties": {
+              "cost_reduction_percent": {
+                "type": "number",
+                "description": "Percentage reduction in query cost",
+                "minimum": 0,
+                "maximum": 100,
+                "examples": [40.0, 75.0]
+              },
+              "time_reduction_percent": {
+                "type": "number",
+                "description": "Percentage reduction in execution time",
+                "minimum": 0,
+                "maximum": 100,
+                "examples": [50.0, 80.0]
+              },
+              "rows_processed_reduction_percent": {
+                "type": "number",
+                "description": "Percentage reduction in rows processed",
+                "minimum": 0,
+                "maximum": 100,
+                "examples": [60.0]
+              }
+            }
+          }
+        }
+      },
+      "examples": [
+        [
+          {
+            "optimization_type": "subquery_to_join",
+            "description": "Converted IN subquery to INNER JOIN for better performance",
+            "before": "WHERE customer_id IN (SELECT customer_id FROM customers WHERE country = 'USA')",
+            "after": "INNER JOIN customers c ON o.customer_id = c.customer_id WHERE c.country = 'USA'",
+            "estimated_improvement": {
+              "cost_reduction_percent": 45.0,
+              "time_reduction_percent": 50.0
+            }
+          }
+        ]
+      ]
+    },
+    "original_cost_estimate": {
+      "type": "object",
+      "description": "Cost estimate for the original query",
+      "properties": {
+        "cost_units": {
+          "type": "number",
+          "description": "Estimated cost in arbitrary units",
+          "examples": [50000.0]
+        },
+        "estimated_time_ms": {
+          "type": "number",
+          "description": "Estimated execution time in milliseconds",
+          "examples": [5000.0]
+        },
+        "estimated_rows_processed": {
+          "type": "integer",
+          "description": "Estimated number of rows to process",
+          "examples": [10000000]
+        }
+      }
+    },
+    "optimized_cost_estimate": {
+      "type": "object",
+      "description": "Cost estimate for the optimized query",
+      "properties": {
+        "cost_units": {
+          "type": "number",
+          "description": "Estimated cost in arbitrary units",
+          "examples": [15000.0]
+        },
+        "estimated_time_ms": {
+          "type": "number",
+          "description": "Estimated execution time in milliseconds",
+          "examples": [1500.0]
+        },
+        "estimated_rows_processed": {
+          "type": "integer",
+          "description": "Estimated number of rows to process",
+          "examples": [150000]
+        }
+      }
+    },
+    "overall_improvement": {
+      "type": "object",
+      "description": "Summary of overall improvement from all optimizations",
+      "properties": {
+        "cost_reduction_percent": {
+          "type": "number",
+          "description": "Overall percentage reduction in query cost",
+          "examples": [70.0]
+        },
+        "time_reduction_percent": {
+          "type": "number",
+          "description": "Overall percentage reduction in execution time",
+          "examples": [70.0]
+        },
+        "readability_improvement": {
+          "type": "string",
+          "description": "Assessment of readability change",
+          "enum": ["improved", "unchanged", "decreased"],
+          "examples": ["improved"]
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Warnings about the optimization",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Warning code",
+            "examples": ["SEMANTIC_CHANGE_POSSIBLE"]
+          },
+          "message": {
+            "type": "string",
+            "description": "Warning message",
+            "examples": ["JOIN may produce different results if there are duplicate customer_ids in the subquery"]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["info", "warning", "error"],
+            "examples": ["warning"]
+          }
+        }
+      }
+    },
+    "alternative_optimizations": {
+      "type": "array",
+      "description": "Alternative optimized versions of the query",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sql": {
+            "type": "string",
+            "description": "Alternative optimized SQL",
+            "examples": ["WITH usa_customers AS (SELECT customer_id FROM customers WHERE country = 'USA') SELECT o.* FROM orders o WHERE EXISTS (SELECT 1 FROM usa_customers uc WHERE uc.customer_id = o.customer_id)"]
+          },
+          "approach": {
+            "type": "string",
+            "description": "Description of the optimization approach",
+            "examples": ["Using CTE with EXISTS for better clarity"]
+          },
+          "tradeoffs": {
+            "type": "string",
+            "description": "Tradeoffs of this approach",
+            "examples": ["May be slower but more readable and easier to maintain"]
+          }
+        }
+      }
+    },
+    "optimization_not_applied": {
+      "type": "array",
+      "description": "Optimizations that could not be applied and why",
+      "items": {
+        "type": "object",
+        "properties": {
+          "optimization_type": {
+            "type": "string",
+            "description": "Type of optimization that was not applied",
+            "examples": ["partition_pruning"]
+          },
+          "reason": {
+            "type": "string",
+            "description": "Reason why the optimization was not applied",
+            "examples": ["Table is not partitioned", "Would change query semantics"]
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "optimized_sql": "SELECT o.* FROM orders o INNER JOIN customers c ON o.customer_id = c.customer_id WHERE c.country = 'USA'",
+      "improvements_made": [
+        {
+          "optimization_type": "subquery_to_join",
+          "description": "Converted IN subquery to INNER JOIN for better performance with indexed join columns",
+          "before": "WHERE customer_id IN (SELECT customer_id FROM customers WHERE country = 'USA')",
+          "after": "INNER JOIN customers c ON o.customer_id = c.customer_id WHERE c.country = 'USA'",
+          "estimated_improvement": {
+            "cost_reduction_percent": 70.0,
+            "time_reduction_percent": 70.0,
+            "rows_processed_reduction_percent": 85.0
+          }
+        }
+      ],
+      "original_cost_estimate": {
+        "cost_units": 50000.0,
+        "estimated_time_ms": 5000.0,
+        "estimated_rows_processed": 10000000
+      },
+      "optimized_cost_estimate": {
+        "cost_units": 15000.0,
+        "estimated_time_ms": 1500.0,
+        "estimated_rows_processed": 150000
+      },
+      "overall_improvement": {
+        "cost_reduction_percent": 70.0,
+        "time_reduction_percent": 70.0,
+        "readability_improvement": "improved"
+      },
+      "warnings": [
+        {
+          "code": "DUPLICATE_HANDLING",
+          "message": "If customers table has duplicate customer_ids, results may differ. Original uses DISTINCT implicitly via IN.",
+          "severity": "info"
+        }
+      ]
+    }
+  ]
+}

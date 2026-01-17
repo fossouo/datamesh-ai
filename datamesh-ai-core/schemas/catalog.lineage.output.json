@@ -1,0 +1,429 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datamesh.ai/schemas/catalog.lineage.output.json",
+  "title": "Catalog Lineage Output",
+  "description": "Output schema for data lineage information showing upstream and downstream datasets",
+  "type": "object",
+  "required": ["dataset_uri", "upstream", "downstream"],
+  "properties": {
+    "dataset_uri": {
+      "type": "string",
+      "format": "uri",
+      "description": "The URI of the dataset for which lineage was retrieved",
+      "examples": ["datamesh://sales/reporting/revenue_summary"]
+    },
+    "upstream": {
+      "type": "array",
+      "description": "Datasets that this dataset depends on (sources/inputs)",
+      "items": {
+        "$ref": "#/$defs/lineage_node"
+      },
+      "examples": [
+        [
+          {
+            "dataset_uri": "datamesh://sales/core/orders",
+            "name": "Orders",
+            "domain": "sales",
+            "distance": 1,
+            "relationship_type": "source"
+          }
+        ]
+      ]
+    },
+    "downstream": {
+      "type": "array",
+      "description": "Datasets that depend on this dataset (consumers/outputs)",
+      "items": {
+        "$ref": "#/$defs/lineage_node"
+      },
+      "examples": [
+        [
+          {
+            "dataset_uri": "datamesh://analytics/dashboards/sales_kpi",
+            "name": "Sales KPI Dashboard",
+            "domain": "analytics",
+            "distance": 1,
+            "relationship_type": "consumer"
+          }
+        ]
+      ]
+    },
+    "graph": {
+      "type": "object",
+      "description": "Full lineage graph representation",
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "description": "All datasets in the lineage graph",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique node ID",
+                "examples": ["node-001"]
+              },
+              "dataset_uri": {
+                "type": "string",
+                "examples": ["datamesh://sales/core/orders"]
+              },
+              "name": {
+                "type": "string",
+                "examples": ["Orders"]
+              },
+              "domain": {
+                "type": "string",
+                "examples": ["sales"]
+              },
+              "is_root": {
+                "type": "boolean",
+                "description": "Whether this is the queried dataset",
+                "examples": [true, false]
+              },
+              "direction": {
+                "type": "string",
+                "enum": ["upstream", "downstream", "root"],
+                "examples": ["upstream"]
+              },
+              "distance": {
+                "type": "integer",
+                "description": "Distance from the root dataset",
+                "examples": [0, 1, 2]
+              }
+            }
+          }
+        },
+        "edges": {
+          "type": "array",
+          "description": "Data flow connections between datasets",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "Unique edge ID",
+                "examples": ["edge-001"]
+              },
+              "source_id": {
+                "type": "string",
+                "description": "ID of the source node",
+                "examples": ["node-001"]
+              },
+              "target_id": {
+                "type": "string",
+                "description": "ID of the target node",
+                "examples": ["node-002"]
+              },
+              "relationship_type": {
+                "type": "string",
+                "description": "Type of data flow relationship",
+                "enum": ["direct", "derived", "aggregated", "filtered", "joined", "unioned"],
+                "examples": ["derived"]
+              },
+              "transformation": {
+                "type": "object",
+                "description": "Transformation details if applicable",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "examples": ["sql", "spark", "dbt", "airflow"]
+                  },
+                  "logic": {
+                    "type": "string",
+                    "description": "Transformation logic or query",
+                    "examples": ["SELECT customer_id, SUM(amount) FROM orders GROUP BY customer_id"]
+                  }
+                }
+              },
+              "job": {
+                "type": "object",
+                "description": "Job/pipeline that creates this data flow",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "examples": ["daily_revenue_aggregation"]
+                  },
+                  "type": {
+                    "type": "string",
+                    "examples": ["dbt", "airflow", "spark", "glue"]
+                  },
+                  "schedule": {
+                    "type": "string",
+                    "examples": ["0 6 * * *", "hourly", "real-time"]
+                  },
+                  "last_run": {
+                    "type": "string",
+                    "format": "date-time",
+                    "examples": ["2024-12-20T06:00:00Z"]
+                  },
+                  "last_status": {
+                    "type": "string",
+                    "enum": ["success", "failed", "running", "pending"],
+                    "examples": ["success"]
+                  }
+                }
+              },
+              "metrics": {
+                "type": "object",
+                "description": "Data flow metrics",
+                "properties": {
+                  "average_records_per_run": {
+                    "type": "integer",
+                    "examples": [50000]
+                  },
+                  "average_duration_seconds": {
+                    "type": "integer",
+                    "examples": [120]
+                  },
+                  "frequency": {
+                    "type": "string",
+                    "examples": ["daily", "hourly", "real-time"]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "column_lineage": {
+      "type": "array",
+      "description": "Column-level lineage mapping",
+      "items": {
+        "type": "object",
+        "properties": {
+          "target_column": {
+            "type": "object",
+            "description": "The target column in the queried dataset",
+            "properties": {
+              "dataset_uri": {
+                "type": "string",
+                "examples": ["datamesh://sales/reporting/revenue_summary"]
+              },
+              "column_name": {
+                "type": "string",
+                "examples": ["total_revenue"]
+              }
+            }
+          },
+          "source_columns": {
+            "type": "array",
+            "description": "Source columns that contribute to the target column",
+            "items": {
+              "type": "object",
+              "properties": {
+                "dataset_uri": {
+                  "type": "string",
+                  "examples": ["datamesh://sales/core/orders"]
+                },
+                "column_name": {
+                  "type": "string",
+                  "examples": ["amount"]
+                },
+                "transformation": {
+                  "type": "string",
+                  "description": "Transformation applied to derive target",
+                  "examples": ["SUM(amount)", "COALESCE(amount, 0)"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "description": "Summary statistics about the lineage",
+      "properties": {
+        "total_upstream": {
+          "type": "integer",
+          "description": "Total number of upstream datasets",
+          "examples": [5]
+        },
+        "total_downstream": {
+          "type": "integer",
+          "description": "Total number of downstream datasets",
+          "examples": [3]
+        },
+        "max_upstream_depth": {
+          "type": "integer",
+          "description": "Maximum depth of upstream lineage found",
+          "examples": [3]
+        },
+        "max_downstream_depth": {
+          "type": "integer",
+          "description": "Maximum depth of downstream lineage found",
+          "examples": [2]
+        },
+        "domains_involved": {
+          "type": "array",
+          "description": "All domains involved in the lineage",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["sales", "finance", "analytics"]]
+        },
+        "critical_path": {
+          "type": "array",
+          "description": "The longest/most critical dependency path",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["datamesh://sales/raw/events", "datamesh://sales/core/orders", "datamesh://sales/reporting/revenue_summary"]]
+        }
+      }
+    }
+  },
+  "$defs": {
+    "lineage_node": {
+      "type": "object",
+      "required": ["dataset_uri", "distance"],
+      "properties": {
+        "dataset_uri": {
+          "type": "string",
+          "format": "uri",
+          "description": "URI of the related dataset",
+          "examples": ["datamesh://sales/core/orders"]
+        },
+        "name": {
+          "type": "string",
+          "description": "Human-readable name of the dataset",
+          "examples": ["Orders", "Customer Master"]
+        },
+        "description": {
+          "type": "string",
+          "description": "Brief description of the dataset",
+          "examples": ["Core order transaction records"]
+        },
+        "domain": {
+          "type": "string",
+          "description": "Data domain",
+          "examples": ["sales", "finance"]
+        },
+        "product": {
+          "type": "string",
+          "description": "Data product",
+          "examples": ["core", "reporting"]
+        },
+        "owner": {
+          "type": "string",
+          "description": "Team that owns the dataset",
+          "examples": ["sales-data-team"]
+        },
+        "distance": {
+          "type": "integer",
+          "description": "Number of hops from the queried dataset",
+          "minimum": 1,
+          "examples": [1, 2, 3]
+        },
+        "relationship_type": {
+          "type": "string",
+          "description": "Type of relationship to the queried dataset",
+          "enum": ["source", "derived_from", "consumer", "feeds_into"],
+          "examples": ["source", "consumer"]
+        },
+        "transformation_type": {
+          "type": "string",
+          "description": "Type of transformation connecting the datasets",
+          "enum": ["direct_copy", "aggregation", "filter", "join", "union", "pivot", "complex"],
+          "examples": ["aggregation"]
+        },
+        "freshness": {
+          "type": "object",
+          "description": "Data freshness information",
+          "properties": {
+            "last_updated": {
+              "type": "string",
+              "format": "date-time",
+              "examples": ["2024-12-20T06:00:00Z"]
+            },
+            "update_frequency": {
+              "type": "string",
+              "examples": ["daily", "hourly", "real-time"]
+            },
+            "sla_hours": {
+              "type": "number",
+              "examples": [6, 24]
+            }
+          }
+        },
+        "quality_score": {
+          "type": "number",
+          "description": "Overall data quality score",
+          "minimum": 0,
+          "maximum": 100,
+          "examples": [98.5]
+        },
+        "tags": {
+          "type": "array",
+          "description": "Tags associated with the dataset",
+          "items": {
+            "type": "string"
+          },
+          "examples": [["production", "certified", "pii"]]
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "dataset_uri": "datamesh://sales/reporting/revenue_summary",
+      "upstream": [
+        {
+          "dataset_uri": "datamesh://sales/core/orders",
+          "name": "Orders",
+          "description": "Core order transaction records",
+          "domain": "sales",
+          "product": "core",
+          "owner": "sales-data-team",
+          "distance": 1,
+          "relationship_type": "source",
+          "transformation_type": "aggregation",
+          "freshness": {
+            "last_updated": "2024-12-20T06:00:00Z",
+            "update_frequency": "daily"
+          },
+          "quality_score": 99.2
+        },
+        {
+          "dataset_uri": "datamesh://sales/core/customers",
+          "name": "Customers",
+          "domain": "sales",
+          "distance": 1,
+          "relationship_type": "source",
+          "transformation_type": "join"
+        }
+      ],
+      "downstream": [
+        {
+          "dataset_uri": "datamesh://analytics/dashboards/sales_kpi",
+          "name": "Sales KPI Dashboard",
+          "domain": "analytics",
+          "distance": 1,
+          "relationship_type": "consumer",
+          "transformation_type": "direct_copy"
+        },
+        {
+          "dataset_uri": "datamesh://finance/reporting/financial_summary",
+          "name": "Financial Summary",
+          "domain": "finance",
+          "distance": 1,
+          "relationship_type": "consumer",
+          "transformation_type": "join"
+        }
+      ],
+      "summary": {
+        "total_upstream": 2,
+        "total_downstream": 2,
+        "max_upstream_depth": 1,
+        "max_downstream_depth": 1,
+        "domains_involved": ["sales", "analytics", "finance"],
+        "critical_path": [
+          "datamesh://sales/core/orders",
+          "datamesh://sales/reporting/revenue_summary",
+          "datamesh://analytics/dashboards/sales_kpi"
+        ]
+      }
+    }
+  ]
+}

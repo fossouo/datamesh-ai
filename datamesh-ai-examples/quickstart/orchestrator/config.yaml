@@ -1,0 +1,109 @@
+# DATAMESH.AI Orchestrator Configuration
+# ========================================
+# Central orchestrator that routes requests between agents
+
+orchestrator:
+  name: datamesh-orchestrator
+  version: "1.0.0"
+  description: "Central orchestrator for A2A request routing and coordination"
+
+# Server configuration
+server:
+  host: 0.0.0.0
+  port: 8080
+  tls:
+    enabled: true
+    cert: ../certs/orchestrator.crt
+    key: ../certs/orchestrator.key
+    ca: ../certs/ca.crt
+
+# Agent registry
+agents:
+  sql-agent:
+    id: sql-agent-001
+    endpoint: http://localhost:8081
+    capabilities:
+      - sql.generate
+      - sql.validate
+      - sql.optimize
+    healthCheck:
+      path: /health
+      intervalSeconds: 30
+
+  catalog-agent:
+    id: catalog-agent-001
+    endpoint: http://localhost:8082
+    capabilities:
+      - catalog.resolve
+      - catalog.lineage
+      - catalog.search
+    healthCheck:
+      path: /health
+      intervalSeconds: 30
+
+  governance-agent:
+    id: governance-agent-001
+    endpoint: http://localhost:8083
+    capabilities:
+      - governance.authorize
+      - governance.audit
+      - governance.classify
+    healthCheck:
+      path: /health
+      intervalSeconds: 30
+
+# Routing configuration
+routing:
+  # Default routing strategy
+  strategy: capability-based
+
+  # Timeout for agent calls
+  timeoutMs: 30000
+
+  # Retry configuration
+  retry:
+    maxAttempts: 3
+    backoffMs: 1000
+    backoffMultiplier: 2
+
+# Async mode configuration (Kafka)
+async:
+  enabled: false
+  kafka:
+    bootstrapServers: localhost:9092
+    topics:
+      requests: datamesh.requests
+      responses: datamesh.responses
+    consumerGroup: orchestrator-group
+
+# Observability configuration
+observability:
+  tracing:
+    enabled: true
+    exporter: otlp
+    endpoint: http://localhost:4317
+    serviceName: datamesh-orchestrator
+  metrics:
+    enabled: true
+    endpoint: http://localhost:4317
+  logging:
+    level: INFO
+    format: json
+    output: ../logs/orchestrator.log
+
+# Security configuration
+security:
+  # Mutual TLS for agent communication
+  mtls:
+    enabled: true
+
+  # Request validation
+  validation:
+    enabled: true
+    maxPayloadSizeBytes: 10485760  # 10MB
+
+# Rate limiting
+rateLimiting:
+  enabled: true
+  requestsPerMinute: 1000
+  burstSize: 100

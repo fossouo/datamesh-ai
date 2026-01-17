@@ -1,0 +1,340 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datamesh.ai/schemas/sql.explain.output.json",
+  "title": "SQL Explain Output",
+  "description": "Output schema for SQL query explanation with execution plan and cost estimates",
+  "type": "object",
+  "required": ["execution_plan", "cost_estimate"],
+  "properties": {
+    "execution_plan": {
+      "type": "object",
+      "description": "The execution plan for the SQL query",
+      "required": ["operations"],
+      "properties": {
+        "operations": {
+          "type": "array",
+          "description": "List of operations in the execution plan",
+          "items": {
+            "type": "object",
+            "required": ["id", "operation", "object"],
+            "properties": {
+              "id": {
+                "type": "integer",
+                "description": "Unique identifier for this operation in the plan",
+                "examples": [1, 2, 3]
+              },
+              "parent_id": {
+                "type": "integer",
+                "description": "ID of the parent operation (null for root)",
+                "examples": [1, null]
+              },
+              "operation": {
+                "type": "string",
+                "description": "Type of operation being performed",
+                "examples": ["Seq Scan", "Index Scan", "Hash Join", "Sort", "Aggregate", "Limit"]
+              },
+              "object": {
+                "type": "string",
+                "description": "The object (table, index) being operated on",
+                "examples": ["customers", "orders", "idx_orders_customer_id"]
+              },
+              "alias": {
+                "type": "string",
+                "description": "Alias used in the query",
+                "examples": ["c", "o"]
+              },
+              "rows": {
+                "type": "integer",
+                "description": "Estimated number of rows returned by this operation",
+                "examples": [10, 1000, 50000]
+              },
+              "width": {
+                "type": "integer",
+                "description": "Estimated average width of rows in bytes",
+                "examples": [64, 128, 256]
+              },
+              "cost": {
+                "type": "object",
+                "description": "Cost metrics for this operation",
+                "properties": {
+                  "startup": {
+                    "type": "number",
+                    "description": "Startup cost before first row is returned",
+                    "examples": [0.0, 10.5, 100.25]
+                  },
+                  "total": {
+                    "type": "number",
+                    "description": "Total cost to complete the operation",
+                    "examples": [100.0, 1500.75, 25000.0]
+                  }
+                }
+              },
+              "filter": {
+                "type": "string",
+                "description": "Filter condition applied in this operation",
+                "examples": ["order_date >= '2024-01-01'::date"]
+              },
+              "join_condition": {
+                "type": "string",
+                "description": "Join condition if this is a join operation",
+                "examples": ["c.customer_id = o.customer_id"]
+              },
+              "sort_key": {
+                "type": "array",
+                "description": "Sort keys if this is a sort operation",
+                "items": {
+                  "type": "string"
+                },
+                "examples": [["total_revenue DESC"]]
+              }
+            }
+          }
+        },
+        "total_cost": {
+          "type": "number",
+          "description": "Total estimated cost of the query",
+          "examples": [25000.0, 1500.75]
+        },
+        "planning_time_ms": {
+          "type": "number",
+          "description": "Time spent planning the query in milliseconds (if analyzed)",
+          "examples": [0.5, 2.3]
+        },
+        "execution_time_ms": {
+          "type": "number",
+          "description": "Time spent executing the query in milliseconds (if analyzed)",
+          "examples": [150.0, 2500.0]
+        }
+      },
+      "examples": [
+        {
+          "operations": [
+            {
+              "id": 1,
+              "parent_id": null,
+              "operation": "Limit",
+              "object": "",
+              "rows": 10,
+              "width": 64,
+              "cost": {"startup": 25000.0, "total": 25000.25}
+            },
+            {
+              "id": 2,
+              "parent_id": 1,
+              "operation": "Sort",
+              "object": "",
+              "rows": 1000,
+              "width": 64,
+              "sort_key": ["total_revenue DESC"],
+              "cost": {"startup": 24000.0, "total": 25000.0}
+            }
+          ],
+          "total_cost": 25000.25
+        }
+      ]
+    },
+    "cost_estimate": {
+      "type": "object",
+      "description": "Detailed cost estimates for the query",
+      "required": ["estimated_cost_units", "estimated_rows"],
+      "properties": {
+        "estimated_cost_units": {
+          "type": "number",
+          "description": "Total estimated cost in arbitrary units",
+          "examples": [25000.0, 1500.75]
+        },
+        "estimated_rows": {
+          "type": "integer",
+          "description": "Estimated number of rows returned by the query",
+          "examples": [10, 100, 1000]
+        },
+        "estimated_time_ms": {
+          "type": "number",
+          "description": "Estimated execution time in milliseconds",
+          "examples": [150.0, 2500.0, 30000.0]
+        },
+        "estimated_data_scanned_bytes": {
+          "type": "integer",
+          "description": "Estimated bytes of data to be scanned",
+          "examples": [104857600, 1073741824]
+        },
+        "estimated_cost_usd": {
+          "type": "number",
+          "description": "Estimated monetary cost in USD (for cloud data warehouses)",
+          "examples": [0.05, 1.25, 10.0]
+        },
+        "breakdown": {
+          "type": "object",
+          "description": "Cost breakdown by component",
+          "properties": {
+            "scan_cost": {
+              "type": "number",
+              "description": "Cost attributed to table/index scans",
+              "examples": [15000.0]
+            },
+            "join_cost": {
+              "type": "number",
+              "description": "Cost attributed to join operations",
+              "examples": [5000.0]
+            },
+            "sort_cost": {
+              "type": "number",
+              "description": "Cost attributed to sort operations",
+              "examples": [3000.0]
+            },
+            "aggregate_cost": {
+              "type": "number",
+              "description": "Cost attributed to aggregation operations",
+              "examples": [2000.0]
+            }
+          }
+        }
+      },
+      "examples": [
+        {
+          "estimated_cost_units": 25000.0,
+          "estimated_rows": 10,
+          "estimated_time_ms": 2500.0,
+          "estimated_data_scanned_bytes": 1073741824,
+          "estimated_cost_usd": 0.05,
+          "breakdown": {
+            "scan_cost": 15000.0,
+            "join_cost": 5000.0,
+            "sort_cost": 3000.0,
+            "aggregate_cost": 2000.0
+          }
+        }
+      ]
+    },
+    "recommendations": {
+      "type": "array",
+      "description": "Optimization recommendations based on the execution plan",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Type of recommendation",
+            "enum": ["index", "partition", "rewrite", "statistics", "configuration"],
+            "examples": ["index"]
+          },
+          "priority": {
+            "type": "string",
+            "description": "Priority level of the recommendation",
+            "enum": ["low", "medium", "high", "critical"],
+            "examples": ["high"]
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of the recommendation",
+            "examples": ["Create an index on orders(customer_id, order_date) to speed up the join and filter"]
+          },
+          "estimated_improvement": {
+            "type": "string",
+            "description": "Estimated improvement if recommendation is applied",
+            "examples": ["50-70% reduction in query time"]
+          }
+        }
+      }
+    },
+    "bottlenecks": {
+      "type": "array",
+      "description": "Identified bottlenecks in the execution plan",
+      "items": {
+        "type": "object",
+        "properties": {
+          "operation_id": {
+            "type": "integer",
+            "description": "ID of the operation that is a bottleneck",
+            "examples": [3]
+          },
+          "reason": {
+            "type": "string",
+            "description": "Reason why this operation is a bottleneck",
+            "examples": ["Sequential scan on large table without filter pushdown"]
+          },
+          "impact": {
+            "type": "string",
+            "description": "Impact on query performance",
+            "examples": ["Accounts for 60% of total query cost"]
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "execution_plan": {
+        "operations": [
+          {
+            "id": 1,
+            "parent_id": null,
+            "operation": "Limit",
+            "object": "",
+            "rows": 10,
+            "width": 64,
+            "cost": {"startup": 25000.0, "total": 25000.25}
+          },
+          {
+            "id": 2,
+            "parent_id": 1,
+            "operation": "Sort",
+            "object": "",
+            "rows": 1000,
+            "width": 64,
+            "sort_key": ["total_revenue DESC"],
+            "cost": {"startup": 24000.0, "total": 25000.0}
+          },
+          {
+            "id": 3,
+            "parent_id": 2,
+            "operation": "HashAggregate",
+            "object": "",
+            "rows": 1000,
+            "width": 64,
+            "cost": {"startup": 20000.0, "total": 22000.0}
+          },
+          {
+            "id": 4,
+            "parent_id": 3,
+            "operation": "Hash Join",
+            "object": "",
+            "rows": 500000,
+            "width": 48,
+            "join_condition": "c.customer_id = o.customer_id",
+            "cost": {"startup": 1000.0, "total": 18000.0}
+          }
+        ],
+        "total_cost": 25000.25
+      },
+      "cost_estimate": {
+        "estimated_cost_units": 25000.0,
+        "estimated_rows": 10,
+        "estimated_time_ms": 2500.0,
+        "estimated_data_scanned_bytes": 1073741824,
+        "estimated_cost_usd": 0.05,
+        "breakdown": {
+          "scan_cost": 15000.0,
+          "join_cost": 5000.0,
+          "sort_cost": 3000.0,
+          "aggregate_cost": 2000.0
+        }
+      },
+      "recommendations": [
+        {
+          "type": "index",
+          "priority": "high",
+          "description": "Create an index on orders(customer_id, order_date) to speed up the join and filter",
+          "estimated_improvement": "50-70% reduction in query time"
+        }
+      ],
+      "bottlenecks": [
+        {
+          "operation_id": 4,
+          "reason": "Hash Join processing 500K rows from orders table",
+          "impact": "Accounts for 60% of total query cost"
+        }
+      ]
+    }
+  ]
+}

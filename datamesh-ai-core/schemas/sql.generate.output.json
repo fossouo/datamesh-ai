@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datamesh.ai/schemas/sql.generate.output.json",
+  "title": "SQL Generate Output",
+  "description": "Output schema for SQL generation containing the generated SQL and metadata",
+  "type": "object",
+  "required": ["sql", "explanation", "datasets_used"],
+  "properties": {
+    "sql": {
+      "type": "string",
+      "description": "The generated SQL query",
+      "minLength": 1,
+      "examples": [
+        "SELECT c.customer_id, c.name, SUM(o.amount) as total_revenue FROM customers c JOIN orders o ON c.customer_id = o.customer_id WHERE o.order_date >= '2024-01-01' GROUP BY c.customer_id, c.name ORDER BY total_revenue DESC LIMIT 10"
+      ]
+    },
+    "explanation": {
+      "type": "string",
+      "description": "Human-readable explanation of what the SQL query does",
+      "examples": [
+        "This query retrieves the top 10 customers by revenue by joining the customers and orders tables, filtering for 2024 orders, and summing the order amounts per customer."
+      ]
+    },
+    "datasets_used": {
+      "type": "array",
+      "description": "List of datasets/tables used in the generated query",
+      "items": {
+        "type": "object",
+        "required": ["uri", "table_name"],
+        "properties": {
+          "uri": {
+            "type": "string",
+            "format": "uri",
+            "description": "The data mesh URI of the dataset",
+            "examples": ["datamesh://sales/core/customers"]
+          },
+          "table_name": {
+            "type": "string",
+            "description": "The table name as used in the SQL query",
+            "examples": ["customers", "orders"]
+          },
+          "alias": {
+            "type": "string",
+            "description": "The alias used for the table in the SQL query",
+            "examples": ["c", "o"]
+          },
+          "columns_used": {
+            "type": "array",
+            "description": "List of columns accessed from this dataset",
+            "items": {
+              "type": "string"
+            },
+            "examples": [["customer_id", "name", "email"]]
+          }
+        }
+      },
+      "examples": [
+        [
+          {
+            "uri": "datamesh://sales/core/customers",
+            "table_name": "customers",
+            "alias": "c",
+            "columns_used": ["customer_id", "name"]
+          },
+          {
+            "uri": "datamesh://sales/core/orders",
+            "table_name": "orders",
+            "alias": "o",
+            "columns_used": ["customer_id", "amount", "order_date"]
+          }
+        ]
+      ]
+    },
+    "confidence": {
+      "type": "number",
+      "description": "Confidence score for the generated SQL (0 to 1)",
+      "minimum": 0,
+      "maximum": 1,
+      "examples": [0.95, 0.8, 0.6]
+    },
+    "warnings": {
+      "type": "array",
+      "description": "Any warnings or notes about the generated query",
+      "items": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Warning code for programmatic handling",
+            "examples": ["AMBIGUOUS_COLUMN", "LARGE_TABLE_SCAN", "MISSING_INDEX"]
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable warning message",
+            "examples": ["Query may scan large table without index", "Column 'name' is ambiguous, defaulting to customers.name"]
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["info", "warning", "error"],
+            "description": "Severity level of the warning",
+            "examples": ["warning"]
+          }
+        }
+      }
+    },
+    "alternatives": {
+      "type": "array",
+      "description": "Alternative SQL queries that could answer the question",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sql": {
+            "type": "string",
+            "description": "Alternative SQL query"
+          },
+          "explanation": {
+            "type": "string",
+            "description": "Why this alternative might be preferred"
+          },
+          "tradeoffs": {
+            "type": "string",
+            "description": "Performance or accuracy tradeoffs of this alternative"
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "sql": "SELECT c.customer_id, c.name, SUM(o.amount) as total_revenue FROM customers c JOIN orders o ON c.customer_id = o.customer_id WHERE o.order_date >= '2024-01-01' GROUP BY c.customer_id, c.name ORDER BY total_revenue DESC LIMIT 10",
+      "explanation": "This query retrieves the top 10 customers by revenue in 2024. It joins the customers and orders tables on customer_id, filters for orders from 2024, sums the order amounts per customer, and returns the top 10 by revenue.",
+      "datasets_used": [
+        {
+          "uri": "datamesh://sales/core/customers",
+          "table_name": "customers",
+          "alias": "c",
+          "columns_used": ["customer_id", "name"]
+        },
+        {
+          "uri": "datamesh://sales/core/orders",
+          "table_name": "orders",
+          "alias": "o",
+          "columns_used": ["customer_id", "amount", "order_date"]
+        }
+      ],
+      "confidence": 0.95,
+      "warnings": [
+        {
+          "code": "LARGE_TABLE_SCAN",
+          "message": "The orders table may contain millions of records. Consider adding a partition filter if available.",
+          "severity": "info"
+        }
+      ]
+    }
+  ]
+}

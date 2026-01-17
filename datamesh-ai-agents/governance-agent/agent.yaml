@@ -1,0 +1,101 @@
+apiVersion: datamesh.ai/v1
+kind: Agent
+
+metadata:
+  name: governance-agent
+  displayName: Governance Agent
+  description: >
+    Enforces data governance policies, handles authorization checks,
+    and applies data redaction based on classification and user context.
+  version: 1.0.0
+  owner:
+    team: data-governance
+    email: data-governance@datamesh.ai
+  labels:
+    domain: governance
+    maturity: beta
+
+spec:
+  runtime:
+    entrypoint: "governance_agent.handler:handle"
+    timeoutMs: 10000
+    concurrency:
+      maxParallel: 50
+    retries:
+      maxAttempts: 2
+      backoffMs: 100
+
+  capabilities:
+    - id: governance.authorize
+      description: Check if a user/agent is authorized for an action on resources.
+      inputSchemaRef: "schemas/governance.authorize.input.json"
+      outputSchemaRef: "schemas/governance.authorize.output.json"
+    - id: governance.redact
+      description: Apply redaction rules to data based on classification and policies.
+      inputSchemaRef: "schemas/governance.redact.input.json"
+      outputSchemaRef: "schemas/governance.redact.output.json"
+    - id: governance.classify
+      description: Classify data fields based on content and metadata.
+      inputSchemaRef: "schemas/governance.classify.input.json"
+      outputSchemaRef: "schemas/governance.classify.output.json"
+
+  tools:
+    - name: policy-store
+      kind: Connector
+      ref: "connectors/policy-store"
+      allow:
+        - "read"
+        - "evaluate"
+      deny:
+        - "write"
+
+  dataAccess:
+    defaultPolicy: "allow"
+    allowedDatasets:
+      - uri: "policies://*"
+        permissions:
+          - "read"
+
+  governance:
+    classificationAwareness:
+      enabled: true
+      blockedClassifications: []
+    approvalRequiredFor: []
+    policyRefs:
+      - "policies/governance-meta.yaml"
+
+  a2a:
+    canCall: []
+    callConstraints:
+      maxDepth: 1
+      requireTraceParent: true
+      allowedOnBehalfOf: true
+
+  observability:
+    tracing:
+      enabled: true
+      standard: "opentelemetry"
+    audit:
+      enabled: true
+      logInputs: true
+      logOutputs: true
+      redactFields:
+        - "data.*"
+
+  safety:
+    mode: "governed"
+    requireHumanConfirmationFor: []
+    invariants:
+      - "NO_POLICY_BYPASS"
+      - "AUDIT_ALL_DECISIONS"
+
+  interfaceHints:
+    preferredInputs:
+      - name: user
+        type: object
+        example: '{"id": "user-42", "roles": ["analyst"]}'
+      - name: action
+        type: string
+        example: "read"
+    outputFormats:
+      - "json"

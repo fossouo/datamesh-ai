@@ -1,0 +1,218 @@
+# Data Retention Policy
+# ======================
+# Defines retention periods and lifecycle management for enterprise data
+
+policy:
+  name: data-retention
+  version: "1.0.0"
+  description: "Enterprise data retention and lifecycle management policy"
+  effectiveDate: "2024-01-01"
+  reviewFrequency: annual
+
+# Default Retention Period
+default:
+  retentionYears: 7
+  archiveAfterYears: 3
+  deleteAfterYears: 7
+  reason: "Standard business and regulatory requirement"
+
+# Category-Specific Retention Rules
+categories:
+  # Financial Records
+  financial:
+    scope:
+      tables:
+        - revenue
+        - transactions
+        - invoices
+        - payments
+        - expenses
+      patterns:
+        - "*_financial_*"
+        - "*_accounting_*"
+    retention:
+      retentionYears: 7
+      archiveAfterYears: 2
+      deleteAfterYears: 10
+      legalHold: true
+    reason: "Tax and financial regulatory requirements (7 years minimum)"
+    regulations:
+      - SOX
+      - IRS
+      - EU_Accounting_Directive
+
+  # Customer Data
+  customer:
+    scope:
+      tables:
+        - customers
+        - customer_profiles
+        - customer_preferences
+      patterns:
+        - "customer_*"
+        - "*_customer_*"
+    retention:
+      retentionYears: 5
+      archiveAfterYears: 2
+      deleteAfterYears: 5
+      anonymizeAfterYears: 3
+    reason: "GDPR data minimization principle - retain only as long as necessary"
+    regulations:
+      - GDPR
+      - CCPA
+
+  # Transaction Logs
+  transactional:
+    scope:
+      tables:
+        - audit_logs
+        - access_logs
+        - change_history
+      patterns:
+        - "*_log"
+        - "*_audit"
+        - "*_history"
+    retention:
+      retentionYears: 3
+      archiveAfterYears: 1
+      deleteAfterYears: 3
+    reason: "Operational and security audit requirements"
+    regulations:
+      - ISO27001
+      - SOC2
+
+  # Analytics Data
+  analytics:
+    scope:
+      tables:
+        - metrics
+        - aggregations
+        - reports
+      patterns:
+        - "*_analytics_*"
+        - "*_metrics_*"
+        - "*_kpi_*"
+    retention:
+      retentionYears: 5
+      archiveAfterYears: 2
+      deleteAfterYears: 7
+    reason: "Business intelligence and trend analysis"
+
+  # Temporary and Cache Data
+  temporary:
+    scope:
+      tables:
+        - temp_*
+        - cache_*
+        - staging_*
+      patterns:
+        - "tmp_*"
+        - "*_temp"
+        - "*_cache"
+    retention:
+      retentionDays: 30
+      archiveAfterDays: 0
+      deleteAfterDays: 30
+    reason: "Short-term operational data"
+
+  # Legal Hold Data
+  legal_hold:
+    scope:
+      tags:
+        - legal_hold
+        - litigation
+        - investigation
+    retention:
+      retentionYears: indefinite
+      archiveAfterYears: 1
+      deleteAfterYears: null  # Never delete until hold released
+      legalHold: true
+    reason: "Active legal proceedings - do not delete"
+    overridesAll: true
+
+# Archive Configuration
+archive:
+  enabled: true
+  storage:
+    tier: cold
+    location: s3://datamesh-archive
+    encryption: AES-256
+    compression: gzip
+  accessRestrictions:
+    roles:
+      - compliance_officer
+      - legal
+      - admin
+  retrievalSLA:
+    hours: 24
+
+# Deletion Rules
+deletion:
+  # Soft delete first, then hard delete
+  softDeleteFirst: true
+  softDeleteRetentionDays: 90
+
+  # Verification before deletion
+  requireVerification: true
+  verificationRoles:
+    - data_steward
+    - compliance_officer
+
+  # Notification before deletion
+  notifyBeforeDeletion:
+    enabled: true
+    daysBeforeDeletion: 30
+    recipients:
+      - data_owners
+      - compliance_team
+
+  # Deletion logging
+  auditDeletions: true
+  retainDeletionLogsYears: 10
+
+# Exception Handling
+exceptions:
+  # How to handle retention exceptions
+  requestProcess:
+    requiredApprovals:
+      - data_steward
+      - legal
+    documentationRequired: true
+    reviewPeriod: quarterly
+
+  # Active exceptions
+  activeExceptions: []
+
+# Enforcement
+enforcement:
+  # Automated enforcement
+  automated:
+    enabled: true
+    runFrequency: daily
+    runTime: "02:00"
+
+  # Alerts
+  alerts:
+    overRetentionThreshold:
+      enabled: true
+      threshold: 10  # percent over retention
+      recipients:
+        - data_steward
+        - compliance_team
+
+    pendingDeletions:
+      enabled: true
+      threshold: 1000  # records
+      recipients:
+        - data_steward
+
+# Audit and Reporting
+audit:
+  enabled: true
+  reportFrequency: monthly
+  includeMetrics:
+    - total_records_by_category
+    - records_approaching_retention
+    - records_deleted
+    - archive_storage_used
+    - exceptions_granted

@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://datamesh.ai/schemas/sql.generate.input.json",
+  "title": "SQL Generate Input",
+  "description": "Input schema for SQL generation from natural language questions",
+  "type": "object",
+  "required": ["question"],
+  "properties": {
+    "question": {
+      "type": "string",
+      "description": "The natural language question to convert to SQL",
+      "minLength": 1,
+      "examples": [
+        "What are the top 10 customers by revenue?",
+        "Show me all orders from last month",
+        "Calculate the average order value by product category"
+      ]
+    },
+    "context": {
+      "type": "object",
+      "description": "Additional context to guide SQL generation",
+      "properties": {
+        "user": {
+          "type": "object",
+          "description": "Information about the user making the request",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Unique identifier for the user",
+              "examples": ["user-123", "analyst-456"]
+            },
+            "roles": {
+              "type": "array",
+              "description": "Roles assigned to the user for access control",
+              "items": {
+                "type": "string"
+              },
+              "examples": [["data-analyst", "finance-reader"], ["admin"]]
+            },
+            "department": {
+              "type": "string",
+              "description": "The department the user belongs to",
+              "examples": ["finance", "marketing", "engineering"]
+            }
+          }
+        },
+        "datasetHints": {
+          "type": "array",
+          "description": "Hints about which datasets or tables to use",
+          "items": {
+            "type": "object",
+            "properties": {
+              "uri": {
+                "type": "string",
+                "format": "uri",
+                "description": "The URI of the dataset",
+                "examples": ["datamesh://domain/product/dataset"]
+              },
+              "alias": {
+                "type": "string",
+                "description": "A friendly alias for the dataset",
+                "examples": ["customers", "orders", "products"]
+              },
+              "relevance": {
+                "type": "number",
+                "description": "Relevance score from 0 to 1",
+                "minimum": 0,
+                "maximum": 1,
+                "examples": [0.95, 0.8]
+              }
+            }
+          },
+          "examples": [
+            [
+              {
+                "uri": "datamesh://sales/core/customers",
+                "alias": "customers",
+                "relevance": 0.95
+              },
+              {
+                "uri": "datamesh://sales/core/orders",
+                "alias": "orders",
+                "relevance": 0.9
+              }
+            ]
+          ]
+        },
+        "constraints": {
+          "type": "object",
+          "description": "Constraints to apply to the generated SQL",
+          "properties": {
+            "maxRows": {
+              "type": "integer",
+              "description": "Maximum number of rows to return",
+              "minimum": 1,
+              "default": 1000,
+              "examples": [100, 500, 1000]
+            },
+            "timeout": {
+              "type": "integer",
+              "description": "Query timeout in seconds",
+              "minimum": 1,
+              "default": 30,
+              "examples": [30, 60, 120]
+            },
+            "dialect": {
+              "type": "string",
+              "description": "SQL dialect to use for generation",
+              "enum": ["ansi", "postgresql", "mysql", "bigquery", "snowflake", "athena", "presto", "spark"],
+              "default": "ansi",
+              "examples": ["postgresql", "bigquery"]
+            },
+            "readOnly": {
+              "type": "boolean",
+              "description": "Whether to only generate read-only queries (SELECT)",
+              "default": true,
+              "examples": [true]
+            },
+            "allowedOperations": {
+              "type": "array",
+              "description": "List of allowed SQL operations",
+              "items": {
+                "type": "string",
+                "enum": ["SELECT", "WITH", "UNION", "JOIN", "GROUP BY", "ORDER BY", "WINDOW"]
+              },
+              "default": ["SELECT", "WITH", "UNION", "JOIN", "GROUP BY", "ORDER BY", "WINDOW"],
+              "examples": [["SELECT", "JOIN", "GROUP BY"]]
+            },
+            "disallowedTables": {
+              "type": "array",
+              "description": "Tables that should not be queried",
+              "items": {
+                "type": "string"
+              },
+              "examples": [["sensitive_data", "audit_logs"]]
+            }
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "question": "What are the top 10 customers by total revenue in 2024?",
+      "context": {
+        "user": {
+          "id": "analyst-001",
+          "roles": ["data-analyst", "sales-reader"],
+          "department": "sales"
+        },
+        "datasetHints": [
+          {
+            "uri": "datamesh://sales/core/customers",
+            "alias": "customers",
+            "relevance": 0.95
+          },
+          {
+            "uri": "datamesh://sales/core/orders",
+            "alias": "orders",
+            "relevance": 0.9
+          }
+        ],
+        "constraints": {
+          "maxRows": 10,
+          "timeout": 30,
+          "dialect": "postgresql",
+          "readOnly": true
+        }
+      }
+    }
+  ]
+}

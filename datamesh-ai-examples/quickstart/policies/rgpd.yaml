@@ -1,0 +1,193 @@
+# RGPD (GDPR) Compliance Policy
+# ===============================
+# Data protection and privacy policy for EU compliance
+
+policy:
+  name: rgpd
+  version: "1.0.0"
+  description: "RGPD/GDPR compliance policy for data access and processing"
+  effectiveDate: "2024-01-01"
+  jurisdiction: EU
+
+# Personal Identifiable Information (PII) Classifications
+pii:
+  categories:
+    - name: direct_identifiers
+      description: "Data that directly identifies an individual"
+      fields:
+        - pattern: "*.email"
+        - pattern: "*.phone"
+        - pattern: "*.ssn"
+        - pattern: "*.national_id"
+        - pattern: "customers.name"
+        - pattern: "users.name"
+      handling: RESTRICTED
+
+    - name: indirect_identifiers
+      description: "Data that can identify when combined with other data"
+      fields:
+        - pattern: "*.birth_date"
+        - pattern: "*.postal_code"
+        - pattern: "*.ip_address"
+        - pattern: "*.device_id"
+      handling: SENSITIVE
+
+    - name: behavioral_data
+      description: "Data about individual behavior and preferences"
+      fields:
+        - pattern: "*.browsing_history"
+        - pattern: "*.purchase_history"
+        - pattern: "*.location_data"
+      handling: SENSITIVE
+
+# Consent Requirements
+consent:
+  required: true
+  purposes:
+    - id: analytics
+      description: "Aggregate analytics and reporting"
+      requiresExplicit: false
+      defaultGranted: true
+
+    - id: marketing
+      description: "Marketing and promotional communications"
+      requiresExplicit: true
+      defaultGranted: false
+
+    - id: profiling
+      description: "Individual profiling and personalization"
+      requiresExplicit: true
+      defaultGranted: false
+
+    - id: third_party
+      description: "Sharing with third party partners"
+      requiresExplicit: true
+      defaultGranted: false
+
+# Access Controls
+accessControls:
+  # Role-based restrictions
+  roles:
+    analyst:
+      allowedPurposes:
+        - analytics
+      piiAccess: aggregate_only
+      geoRestrictions:
+        - EU
+
+    data_scientist:
+      allowedPurposes:
+        - analytics
+        - profiling
+      piiAccess: pseudonymized
+      geoRestrictions: []
+
+    compliance_officer:
+      allowedPurposes:
+        - analytics
+        - profiling
+        - marketing
+      piiAccess: full_with_audit
+      geoRestrictions: []
+
+  # Column-level restrictions
+  columnRestrictions:
+    "*.email":
+      mask: "***@{domain}"
+      allowedRoles:
+        - compliance_officer
+        - admin
+
+    "*.phone":
+      mask: "***-****"
+      allowedRoles:
+        - compliance_officer
+        - admin
+
+    "*.ssn":
+      mask: "***-**-****"
+      allowedRoles: []  # No access
+
+# Data Subject Rights
+dataSubjectRights:
+  rightToAccess:
+    enabled: true
+    responseTimeHours: 720  # 30 days
+
+  rightToRectification:
+    enabled: true
+    responseTimeHours: 720
+
+  rightToErasure:
+    enabled: true
+    responseTimeHours: 720
+    exceptions:
+      - legal_obligation
+      - public_interest
+      - archiving_purposes
+
+  rightToPortability:
+    enabled: true
+    formats:
+      - JSON
+      - CSV
+    responseTimeHours: 720
+
+  rightToRestriction:
+    enabled: true
+    responseTimeHours: 24
+
+# Cross-Border Transfer Rules
+crossBorderTransfer:
+  allowedDestinations:
+    - region: EU
+      mechanism: internal
+
+    - region: EEA
+      mechanism: internal
+
+    - region: UK
+      mechanism: adequacy_decision
+
+    - region: US
+      mechanism: standard_contractual_clauses
+      additionalMeasures:
+        - encryption_in_transit
+        - encryption_at_rest
+        - access_logging
+
+  blockedDestinations:
+    - region: UNKNOWN
+
+# Audit Requirements
+audit:
+  enabled: true
+  logAllAccess: true
+  logRetentionDays: 365
+  alertOnPiiAccess: true
+  reportingFrequency: monthly
+
+# Breach Notification
+breachNotification:
+  internalAlertHours: 1
+  dpaNotificationHours: 72
+  dataSubjectNotificationRequired: true
+
+# Enforcement Actions
+enforcement:
+  actions:
+    - trigger: unauthorized_pii_access
+      action: deny_and_alert
+      severity: high
+
+    - trigger: missing_consent
+      action: deny_and_log
+      severity: medium
+
+    - trigger: cross_border_violation
+      action: deny_and_alert
+      severity: high
+
+    - trigger: retention_violation
+      action: warn_and_log
+      severity: low

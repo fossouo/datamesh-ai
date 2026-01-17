@@ -1,0 +1,11 @@
+{
+  "question": "What is the total cost breakdown by AI model?",
+  "user": {
+    "id": "analyst-01",
+    "roles": ["analyst", "finance-team"]
+  },
+  "context": {
+    "database": "talki_metrics_dev",
+    "purpose": "cost_optimization"
+  }
+}
